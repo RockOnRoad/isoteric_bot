@@ -1,0 +1,202 @@
+import os
+import logging
+from re import M
+
+import asyncio
+from aiogram import Router, F
+from aiogram.filters import Command, Filter
+from aiogram.types import Message, CallbackQuery, BufferedInputFile
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.config import settings
+from db.crud import (
+    get_user_by_telegram_id,
+    decrease_user_balance,
+    increase_user_balance,
+)
+from keyboards import InlineKbd
+from prompts import PROMPT_TEMPLATES
+from services import calculate_arcana, GoogleAI, OpenAIClient
+from schemas import CalculateArcana, DeleteFunc
+
+logger = logging.getLogger(__name__)
+mnt_rtr = Router()
+
+
+class ArcanaStates(StatesGroup):
+    arcana = State()
+
+
+class AdminCheck(Filter):
+    """Filter to check if the user is an admin (owner) of the bot."""
+
+    async def __call__(self, update: Message | CallbackQuery) -> bool:
+        return str(update.from_user.id) in settings.admins
+
+
+#  ----------- CALCULATE ARCANA -----------
+
+
+# @mnt_rtr.message(Command("arcana"))
+async def arcana(update: Message | CallbackQuery, state: FSMContext) -> None:
+    logger.info(f"{update.from_user.id} @{update.from_user.username} - 'arcana'")
+
+    await state.set_state(ArcanaStates.arcana)
+
+    msg = "Введите дату рождения в формате <b>ДД.ММ.ГГГГ</b>"
+
+    if isinstance(update, Message):
+        await update.answer(msg)
+    elif isinstance(update, CallbackQuery):
+        await update.message.edit_text(msg)
+    else:
+        return
+
+
+mnt_rtr.message.register(arcana, Command("arcana"))
+mnt_rtr.callback_query.register(arcana, CalculateArcana.filter(F.button == "calculate"))
+
+
+#  ----------- WRITE BIRTHDAY -----------
+
+
+@mnt_rtr.message(ArcanaStates.arcana)
+async def handle_arcana_message(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    birthday: str = message.text
+    arcana: dict = calculate_arcana(birthday)
+
+    msg = f"""
+Аркан дня: {arcana["day_arcana"]}
+Аркан месяца: {arcana["month_arcana"]}
+Аркан года: {arcana["year_arcana"]}
+
+<b>Аркан даты рождения:</b> {arcana.get("main_arcana", "")}
+Центральный аркан: {arcana.get("the_arcana", "")}
+    """
+
+    buttons = {"Повторить": CalculateArcana(button="calculate").pack()}
+
+    kbd = InlineKbd(buttons=buttons, width=2)
+
+    await message.answer(msg, reply_markup=kbd.markup)
+
+
+#  ----------- CURRENT MODELS -----------
+
+
+@mnt_rtr.message(Command("models"), AdminCheck())
+async def models(update: Message | CallbackQuery, state: FSMContext) -> None:
+
+    client = OpenAIClient()
+    models = await client.get_models()
+    msg = "Модели OpenAI:\n"
+    for model in models:
+        msg += f"{model}\n"
+    await update.answer(msg)
+
+
+#  ----------- MODELS TEMPLATES -----------
+
+
+@mnt_rtr.message(Command("templates"), AdminCheck())
+async def templates(update: Message | CallbackQuery, state: FSMContext) -> None:
+    free_mode_explanation = PROMPT_TEMPLATES["free_mode_explanation"]
+    raw = "блабла"
+    readings_mode_explanation = PROMPT_TEMPLATES["readings_mode_explanation"]
+    tmp1: str = free_mode_explanation.render(raw=raw)
+    text: str = readings_mode_explanation.render(tmp1=tmp1)
+    print(text)
+
+
+#  ----------- CHATGPT IMAGE -----------
+
+
+@mnt_rtr.message(Command("image"), AdminCheck())
+async def image(update: Message | CallbackQuery, state: FSMContext) -> None:
+    client = OpenAIClient()
+    image_bytes = await client.chatgpt_image(
+        prompt="Make image in the same style but for arcana 13 (Death)",
+    )
+    await update.answer_photo(photo=image_bytes)
+
+
+#  ----------- GOOGLE IMAGE -----------
+
+
+@mnt_rtr.message(Command("google_models"), AdminCheck())
+async def google_image(update: Message | CallbackQuery, state: FSMContext) -> None:
+    client = GoogleAI()
+    models = client.google_models()
+    msg = "Модели Gemini:\n"
+    for model in models:
+        msg += f"{model.name}\n"
+    await update.answer(msg)
+
+
+#  ----------- TEST MESSAGE DELETION -----------
+
+
+@mnt_rtr.message(Command("delete"), AdminCheck())
+async def delete(message: Message | CallbackQuery, state: FSMContext) -> None:
+
+    buttons = {"Button 1": DeleteFunc(button="button1").pack()}
+    kbd = InlineKbd(buttons=buttons, width=2)
+
+    await message.answer("Message 1", reply_markup=kbd.markup)
+
+
+@mnt_rtr.callback_query(DeleteFunc.filter(F.button == "button1"))
+async def button1(callback: CallbackQuery, state: FSMContext) -> None:
+
+    msg1 = await callback.message.edit_text("Message 1")
+    await asyncio.sleep(1)
+    await msg1.delete()
+    photo = BufferedInputFile(
+        open(
+            "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg", "rb"
+        ).read(),
+        filename="test.jpg",
+    )
+    msg2 = await callback.message.answer_photo(photo=photo)
+    await asyncio.sleep(1)
+    await msg2.delete()
+    await asyncio.sleep(1)
+    msg3 = await callback.message.answer("Message 3")
+    await asyncio.sleep(1)
+    await msg3.delete()
+
+
+#  ----------- DECREASE BALANCE -----------
+
+
+@mnt_rtr.message(Command("withdraw"), AdminCheck())
+async def decrease_balance(
+    message: Message, db_session: AsyncSession, state: FSMContext
+) -> None:
+
+    user_id = message.text.split()[1]
+    amount = message.text.split()[2]
+
+    user = await get_user_by_telegram_id(int(user_id), db_session)
+
+    new_balance = await decrease_user_balance(user.id, int(amount), db_session)
+    await message.answer(f"Баланс: {new_balance}")
+
+
+#  ----------- DEPOSIT BALANCE -----------
+
+
+@mnt_rtr.message(Command("deposit"), AdminCheck())
+async def deposit_balance(
+    message: Message, db_session: AsyncSession, state: FSMContext
+) -> None:
+    user_id = message.text.split()[1]
+    amount = message.text.split()[2]
+
+    user = await get_user_by_telegram_id(int(user_id), db_session)
+
+    new_balance = await increase_user_balance(user.id, int(amount), db_session)
+    await message.answer(f"Баланс: {new_balance}")
