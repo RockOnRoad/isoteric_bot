@@ -5,7 +5,11 @@ from aiogram.types import Message, CallbackQuery, FSInputFile
 from dns import message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import get_user_by_telegram_id
+from db.crud import (
+    get_user_by_telegram_id,
+    get_user_referrals,
+    get_user_referral_bonuses_total,
+)
 from keyboards import InlineKbd
 from schemas import LkButton, LkTopUp, ReferalLink, TARIFFS
 
@@ -23,7 +27,7 @@ async def lk_handler(update: Message | CallbackQuery, db_session: AsyncSession) 
         "👤 Личное пространство\n\n"
         f"{name}, здесь центр управления вашей энергией и доступом к знаниям. ✨\n\n"
         f"<b>💎 Ваш баланс: {user.balance} ⚡️</b>\n\n"
-        "Напоминаю: любой запрос к Матрике = 33 ⚡️.\n\n"
+        "Любой запрос к Матрике = <b>33⚡️</b>.\n\n"
         "🤝 Кармический менеджмент\n"
         "Приглашайте близких искать свой путь.\n"
         "Вы будете получать <b>+10% энергии</b> на свой счет от суммы любых пополнений каждого друга.\n\n"
@@ -112,14 +116,18 @@ async def top_up(callback: CallbackQuery, db_session: AsyncSession) -> None:
 @lk_rtr.callback_query(LkButton.filter(F.button == "invite_friend"))
 async def invite_friend(callback: CallbackQuery, db_session: AsyncSession) -> None:
     user = await get_user_by_telegram_id(callback.from_user.id, db_session)
-    # referrals_count = len(user.referrals)
-    # total_earned = sum(bonus.amount for bonus in user.referral_bonuses)
+    referrals = await get_user_referrals(user_id=user.id, session=db_session)
+
+    referrals_count = len(referrals)
+    total_earned = await get_user_referral_bonuses_total(
+        user_id=user.id, session=db_session
+    )
 
     msg = (
         "<b>🤝 Энергия связей</b>\n\n"
         f"{user.name}, это ваш круг влияния. Когда вы делитесь инструментом развития с другими, Вселенная возвращает вам ресурс 🔮\n\n"
-        "<b>👥 В вашем круге:</b> {referrals_count} чел.\n"
-        "<b>💎 Начислено бонусов:</b> {total_earned}⚡️\n"
+        f"<b>👥 В вашем круге:</b> {referrals_count} чел.\n"
+        f"<b>💎 Начислено бонусов:</b> {total_earned}⚡️\n"
         f"🔗 Ваша пригласительная ссылка:\n"
         f"<code>https://t.me/MatrikaSoulBot?start=ref_{user.id}</code>\n"
         "*(Нажмите на ссылку, чтобы скопировать)*\n\n"

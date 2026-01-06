@@ -1,4 +1,5 @@
 __all__ = (
+    "get_user",
     "upsert_user",
     "get_user_by_telegram_id",
     "update_user_info",
@@ -6,14 +7,18 @@ __all__ = (
     "get_user_balance",
     "decrease_user_balance",
     "increase_user_balance",
+    "get_user_referrals",
     "add_entry_to_user_sources",
     "create_payment",
     "get_payment_by_payment_id",
     "update_payment_status",
     "get_pending_payments",
+    "create_referral_bonus",
+    "get_user_referral_bonuses_total",
 )
 
 from .users_crud import (
+    get_user,
     upsert_user,
     get_user_by_telegram_id,
     update_user_info,
@@ -21,6 +26,7 @@ from .users_crud import (
     get_user_balance,
     decrease_user_balance,
     increase_user_balance,
+    get_user_referrals,
 )
 
 from .user_source_crud import add_entry_to_user_sources
@@ -29,4 +35,8 @@ from .payment_crud import (
     get_payment_by_payment_id,
     update_payment_status,
     get_pending_payments,
+)
+from .ref_bonuses_crud import (
+    create_referral_bonus,
+    get_user_referral_bonuses_total,
 )

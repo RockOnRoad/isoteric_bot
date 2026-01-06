@@ -1,5 +1,6 @@
 import logging
 from re import T
+from math import ceil
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
@@ -8,15 +9,17 @@ from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.crud import (
+    get_user,
     get_user_by_telegram_id,
     create_payment,
     get_payment_by_payment_id,
     update_payment_status,
     increase_user_balance,
     update_user_info,
+    create_referral_bonus,
 )
 from keyboards import InlineKbd
-from schemas import LkTopUp, YKOperations, EmailStates, TARIFFS
+from schemas import LkTopUp, YKOperations, EmailStates, TARIFFS, REFERRAL_BONUS_PERCENT
 from services import PaymentService
 from core.config import settings
 
@@ -166,27 +169,23 @@ async def payment_status(
 
     elif payment_status_data["status"] == "succeeded":
 
-        user = await get_user_by_telegram_id(
-            tg_id=call.from_user.id, session=db_session
-        )
-
         payment = await get_payment_by_payment_id(
             payment_id=callback_data.payment_id,
             session=db_session,
         )
         if payment.status == "completed":
             pass
+
         else:
-            # Получаем количество кредитов из тарифа
-            kreds = TARIFFS.get(payment.amount, {}).get("kreds")
-            if kreds is None:
-                logger.error(f"Kreds is None for amount {payment.amount}")
-                kreds = payment.amount
+
+            user = await get_user_by_telegram_id(
+                tg_id=call.from_user.id, session=db_session
+            )
 
             # Начисляем кредиты из платежа, а не рубли из статуса
             await increase_user_balance(
                 user_id=user.id,
-                amount=kreds,
+                amount=payment.amount,
                 session=db_session,
             )
             await update_payment_status(
@@ -194,6 +193,34 @@ async def payment_status(
                 status="completed",
                 session=db_session,
             )
+            if user.referred_id:
+
+                referrer = await get_user(id=user.referred_id, session=db_session)
+
+                bonus_amount = ceil(payment.amount * REFERRAL_BONUS_PERCENT)
+
+                #  Создаем запись в бд о начислении бонуса
+                ref_bonus_data = {
+                    "ref_id": user.id,
+                    "referred_user_id": call.from_user.id,
+                    "referrer_user_id": referrer.user_id,
+                    "bonus_type": "deposit",
+                    "amount": bonus_amount,
+                    "deposit_rub_amount": payment.rub_amount,
+                    "deposit_token_amount": payment.amount,
+                    "pay_id": payment.id,
+                }
+                await create_referral_bonus(
+                    data=ref_bonus_data,
+                    session=db_session,
+                )
+
+                #  Начисляем бонус рефереру
+                await increase_user_balance(
+                    user_id=referrer.id,
+                    amount=bonus_amount,
+                    session=db_session,
+                )
 
         await call.message.edit_text(
             (

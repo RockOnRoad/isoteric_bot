@@ -34,3 +34,6 @@ TARIFFS = {
         "kreds": 3000,
     },
 }
+
+
+REFERRAL_BONUS_PERCENT = 0.1

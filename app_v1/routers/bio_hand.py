@@ -10,6 +10,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.crud import get_user_by_telegram_id
+from db.models import User
 from services.first_start import first_start_routine
 from keyboards import InlineKbd
 from schemas import BioStates, BioEdit, BioCorrect, BioSex, main_reply_kbd
@@ -92,14 +93,17 @@ async def handle_start_command(
 Как мне к тебе обращаться?
 <b>(Напиши, пожалуйста, своё имя 👇)</b>
 """
+
+        if user is None:
+            user: User | None = await first_start_routine(
+                command=command, message=message, db_session=db_session
+            )
+            if user is None:
+                msg = "Похоже реферальная ссылка некорректна. Попробуй ещё раз."
+
         await message.answer(msg, reply_markup=ReplyKeyboardRemove())
 
         await state.set_state(BioStates.name)
-
-        if user is None:
-            await first_start_routine(
-                command=command, message=message, db_session=db_session
-            )
 
 
 #  ----------- NAME ----------- ШАГ 1

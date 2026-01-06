@@ -29,11 +29,11 @@ class ReferralBonus(Base):
     bonus_type: Mapped[BonusType] = mapped_column(
         Enum("deposit", "generation", name="bonus_type_enum")
     )
-    #  Сумма реферального бонуса в кредитах
+    #  Сумма реферального бонуса в энергии
     amount: Mapped[int]
     #  Сумма депозита в рублях
     deposit_rub_amount: Mapped[int]
-    #  Сумма депозита в кредитах
+    #  Сумма депозита в энергии
     deposit_token_amount: Mapped[int]
     #  ID платежа, за который начислен бонус
     pay_id: Mapped[int | None] = mapped_column(

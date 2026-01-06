@@ -2,27 +2,25 @@ import logging
 from sqlalchemy import select, update, func, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import DBAPIError, SQLAlchemyError
+from sqlalchemy.exc import DBAPIError, SQLAlchemyError, IntegrityError
 
 from db.models.user import User
 
 logger = logging.getLogger(__name__)
 
 
-async def get_user_by_telegram_id(
-    telegram_id: int, session: AsyncSession | None = None
-) -> User | None:
+async def get_user(id: int, session: AsyncSession | None = None) -> User | None:
     """
-    Get user by Telegram ID.
+    Get user by ID.
 
     Args:
-        telegram_id: Telegram user ID
+        id: user ID (pk)
         session: Database session
 
     Returns:
         User object or None
     """
-    stmt = select(User).where(User.user_id == telegram_id)
+    stmt = select(User).where(User.id == id)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -179,3 +177,13 @@ async def increase_user_balance(
     logger.info(f"User {user_id} balance +{amount} -> {new_balance}")
 
     return new_balance
+
+
+#  --------------- GET USER REFERRALS ---------------
+
+
+async def get_user_referrals(user_id: int, session: AsyncSession) -> list[User]:
+    """Get user referrals."""
+    stmt = select(User).where(User.referred_id == user_id)
+    result = await session.execute(stmt)
+    return result.scalars().all()

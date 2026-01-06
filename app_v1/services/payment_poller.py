@@ -1,16 +1,19 @@
-import asyncio
+from math import ceil
 import logging
 from typing import Optional
 
+import asyncio
+
 from db.database import AsyncSessionLocal
 from db.crud import (
-    get_user_by_telegram_id,
+    get_user,
     get_pending_payments,
     update_payment_status,
     increase_user_balance,
+    create_referral_bonus,
 )
 from services.yk_payments import PaymentService
-from schemas.lk_sch import TARIFFS
+from schemas.lk_sch import TARIFFS, REFERRAL_BONUS_PERCENT
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +61,40 @@ class PaymentPoller:
                                 amount=payment.amount,
                                 session=session,
                             )
+
+                            user = await get_user(id=payment.user_id, session=session)
+                            if user.referred_id:
+
+                                referrer = await get_user(
+                                    id=user.referred_id, session=session
+                                )
+
+                                bonus_amount = ceil(
+                                    payment.amount * REFERRAL_BONUS_PERCENT
+                                )
+
+                                #  Создаем запись в бд о начислении бонуса
+                                ref_bonus_data = {
+                                    "ref_id": user.id,
+                                    "referred_user_id": user.user_id,
+                                    "referrer_user_id": referrer.user_id,
+                                    "bonus_type": "deposit",
+                                    "amount": bonus_amount,
+                                    "deposit_rub_amount": payment.rub_amount,
+                                    "deposit_token_amount": payment.amount,
+                                    "pay_id": payment.id,
+                                }
+                                await create_referral_bonus(
+                                    data=ref_bonus_data,
+                                    session=session,
+                                )
+
+                                #  Начисляем бонус рефереру
+                                await increase_user_balance(
+                                    user_id=referrer.id,
+                                    amount=bonus_amount,
+                                    session=session,
+                                )
 
                             logger.info(
                                 f"Payment {payment.payment_id} completed. \n"
