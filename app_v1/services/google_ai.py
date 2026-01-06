@@ -94,7 +94,7 @@ class GoogleAI:
             )
             prompt = PROMPT_TEMPLATES["first_image_base"].render(
                 context=context,
-                gender_guide=gender_guide,
+                # gender_guide=gender_guide,
             )
 
         elif feature == "ai_portraits":
@@ -124,6 +124,17 @@ class GoogleAI:
                 gender_guide=gender_guide,
                 prompt_focus=prompt_focus,
             )
+            await state.clear()
+
+        elif feature == "daily_card":
+
+            chatGPT_answer = context.get("chatGPT_answer", "")
+
+            prompt = PROMPT_TEMPLATES["daily_card_image_base"].render(
+                chatGPT_answer=chatGPT_answer,
+                arcana_name=main_arcana_name,
+            )
+
             await state.clear()
 
         config = GenerateContentConfig(

@@ -4,9 +4,8 @@ import yaml
 from pathlib import Path
 
 from aiogram import Router, F
-from aiogram.types import FSInputFile
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, BufferedInputFile
+from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import COST
@@ -65,9 +64,9 @@ async def handle_ai_portraits_main(
     msg = (
         "<b>🎭 AI-образы по Матрице Судьбы</b>\n\n"
         f"""<b>{name}</b>, иногда один точный образ работает сильнее, чем длинный текст.
-В этом разделе я создаю 🪄 для тебя <b>личные энергетические талисманы — AI-картины 🃏</b> по твоим арканам: про деньги, любовь, женский магнетизм и даже теневую сторону, чтобы вернуть ресурс, включить внутреннюю силу и зафиксировать нужное состояние. Через них работать с намерением и состоянием.
-
-<b>Выбери, какой образ создадим прямо сейчас 👇</b>"""
+В этом разделе я создаю 🪄 для тебя <b>личные энергетические талисманы — AI-картины 🃏</b> по твоим арканам: про деньги, любовь, женский магнетизм и даже теневую сторону, чтобы вернуть ресурс, включить внутреннюю силу и зафиксировать нужное состояние. Через них работать с намерением и состоянием.\n\n
+"""
+        "<b>Выбери, какой образ создадим прямо сейчас 👇</b>"
     )
 
     ai_portraits_buttons = {
@@ -83,7 +82,7 @@ async def handle_ai_portraits_main(
     kbd = InlineKbd(buttons=ai_portraits_buttons, width=2)
 
     if isinstance(update, CallbackQuery):
-        await update.message.edit_text(msg, reply_markup=kbd.markup)
+        await update.message.answer(msg, reply_markup=kbd.markup)
     else:
         await update.answer(msg, reply_markup=kbd.markup)
 
@@ -135,6 +134,8 @@ async def handle_buttons(
             else portrait_data["description_female"]
         )
 
+    price = f"💎 Энергообмен: {COST['ai_portrait']} ⚡️ | За открытие любой темы 🔓"
+
     desc_footer = portrait_data["description_footer"]
 
     if portrait in (
@@ -147,7 +148,7 @@ async def handle_buttons(
 
         await state.set_state(AiPortraitStates.aspect)
 
-        msg = f"{desc}\n<b>{desc_footer}</b>"
+        msg = f"{desc}\n{price}\n<b>{desc_footer}</b>"
         buttons = {
             "🪄 Создать AI-образ✨": AiPortraitGenerate(button="generate").pack(),
             "🔙 Назад": AiPortraitGenerate(button="back").pack(),
@@ -158,7 +159,7 @@ async def handle_buttons(
 
         await state.set_state(AiPortraitStates.another_birthday)
 
-        msg = f"{desc}\n{desc_footer}"
+        msg = f"{desc}\n{price}\n{desc_footer}"
         buttons = {
             "🔙 Назад": AiPortraitGenerate(button="back").pack(),
         }
@@ -285,10 +286,10 @@ async def handle_no_ai_portraits_for_poor(
 
     await call.message.answer(
         (
-            "У вас недостаточно средств для просмотра этого раздела\n"
-            "Пополните баланс и попробуйте снова\n\n"
-            f"Ваш баланс: {user_balance}\n"
-            f"Стоимость генерации: {cost}"
+            f"Для открытия этого образа необходимо {cost}⚡️.\n"
+            f"Сейчас на вашем балансе: {user_balance}⚡️.\n\n"
+            "Мы остановились буквально в шаге от ответа. Вселенная любит энергообмен — давайте пополним ресурс, чтобы поток не прерывался.\n\n"
+            "Нажмите кнопку ниже, чтобы выбрать пакет энергии 👇\n"
         ),
         reply_markup=kbd.markup,
     )

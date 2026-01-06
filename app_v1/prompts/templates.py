@@ -29,4 +29,6 @@ PROMPT_TEMPLATES = {
     "ai_portraits_mode_explanation": jinja_env.get_template(
         "ai-portraits/image/mode_explanation.j2"
     ),
+    "daily_card_image_base": jinja_env.get_template("daily_card/image/base.j2"),
+    "daily_card_text_base": jinja_env.get_template("daily_card/text/base.j2"),
 }

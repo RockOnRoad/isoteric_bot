@@ -2,8 +2,6 @@ import asyncio
 import logging
 from typing import Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from db.database import AsyncSessionLocal
 from db.crud import (
     get_user_by_telegram_id,
@@ -12,6 +10,7 @@ from db.crud import (
     increase_user_balance,
 )
 from services.yk_payments import PaymentService
+from schemas.lk_sch import TARIFFS
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,5 @@
 import logging
+from re import T
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
@@ -15,7 +16,7 @@ from db.crud import (
     update_user_info,
 )
 from keyboards import InlineKbd
-from schemas import LkTopUp, YKOperations, EmailStates
+from schemas import LkTopUp, YKOperations, EmailStates, TARIFFS
 from services import PaymentService
 from core.config import settings
 
@@ -36,7 +37,7 @@ async def email_handler(
     try:
         validate_email(email)
 
-        kreds = await state.get_value("kreds")
+        rub = await state.get_value("rub")
         await state.clear()
 
         #  Сохраняем email в бд
@@ -45,7 +46,7 @@ async def email_handler(
         )
 
         buttons = {
-            "Продолжить": LkTopUp(kreds=kreds).pack(),
+            "Продолжить": LkTopUp(rub=rub).pack(),
         }
         kbd = InlineKbd(buttons=buttons, width=2)
         await message.answer("✅ Email принят", reply_markup=kbd.markup)
@@ -70,29 +71,37 @@ async def top_up(
     user = await get_user_by_telegram_id(tg_id=call.from_user.id, session=db_session)
     if user.mail is None:
         await state.set_state(EmailStates.email)
-        await state.update_data(kreds=callback_data.kreds)
+        await state.update_data(rub=callback_data.rub)
         await call.message.answer("🧾 На какой email отправить чек?")
         return
 
     payment_service = PaymentService()
-    amount = int(callback_data.kreds)
+    rub_amount = callback_data.rub
 
+    #  Создаем платеж в YooKassa
     payment_data = payment_service.create_payment(
-        amount=amount,
+        amount=rub_amount,
         chat_id=call.message.chat.id,
+        # email=user.mail,
     )
 
+    #  Сохраняем данные платежа в state
     await state.update_data(
         payment_link=str(payment_data["confirmation_url"]),
         payment_amount=payment_data["amount"],
     )
 
-    # Сохраняем платеж в БД
+    # Сохраняем платеж в БД (amount - кредиты, rub_amount - рубли)
+    kreds = TARIFFS.get(rub_amount, {}).get("kreds")
+    if kreds is None:
+        logger.error(f"Kreds is None for amount {rub_amount}")
+        kreds = rub_amount
+
     await create_payment(
         user_id=user.id,
         payment_id=payment_data["payment_id"],
-        amount=amount,
-        rub_amount=amount,
+        amount=kreds,
+        rub_amount=rub_amount,
         status="pending",
         session=db_session,
     )
@@ -141,7 +150,7 @@ async def payment_status(
                 operation="check", payment_id=callback_data.payment_id
             ).pack(),
         }
-        kbd = InlineKbd(buttons=buttons, width=2)
+        kbd = InlineKbd(buttons=buttons, width=1)
 
         await call.message.answer(
             (
@@ -168,9 +177,16 @@ async def payment_status(
         if payment.status == "completed":
             pass
         else:
+            # Получаем количество кредитов из тарифа
+            kreds = TARIFFS.get(payment.amount, {}).get("kreds")
+            if kreds is None:
+                logger.error(f"Kreds is None for amount {payment.amount}")
+                kreds = payment.amount
+
+            # Начисляем кредиты из платежа, а не рубли из статуса
             await increase_user_balance(
                 user_id=user.id,
-                amount=int(payment_status_data["amount"]),
+                amount=kreds,
                 session=db_session,
             )
             await update_payment_status(
@@ -181,11 +197,10 @@ async def payment_status(
 
         await call.message.edit_text(
             (
-                f"<b>Пополнение баланса</b>\n\n"
-                f"<b>ID платежа:</b> {callback_data.payment_id}\n"
-                f"<b>Сумма:</b> {payment_status_data['amount']} ₽\n\n"
-                "⚪️ Платеж прошел успешно\n"
-                f"<b>Баланс:</b> {user.balance}"
+                f"<b>Ваш баланс пополнен на {payment_status_data['amount']} энергии ⚡️</b>\n\n"
+                "Вы выбрали путь Изобилия и развития. Вселенная всегда щедро возвращает тем, кто не боится инвестировать в свою Душу.\n"
+                "Теперь инструменты Матрицы готовы к работе.\n\n"
+                "👇 Куда направим этот ресурс прямо сейчас?"
             )
         )
         await state.clear()

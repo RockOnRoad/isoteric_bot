@@ -102,7 +102,7 @@ async def stir_the_cauldron(
         # caption = f"{data['name']}, я получила твой центральный код"
         await call.message.answer_photo(
             photo=photo,
-            # caption=caption,
+            caption=answer,
             reply_markup=main_reply_kbd.markup,
         )
     except TelegramBadRequest as e:
@@ -114,7 +114,7 @@ async def stir_the_cauldron(
     await state.set_state(ReadingsStates.witch)
     await state.update_data(name=user.name, birthday=user.birthday, sex=user.sex)
 
-    await call.message.answer(answer, reply_markup=kbd.markup)
+    # await call.message.answer(answer, reply_markup=kbd.markup)
     # await call.message.answer("answer", reply_markup=kbd.markup)
 
 

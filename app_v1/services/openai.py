@@ -165,6 +165,16 @@ class OpenAIClient:
             )
             # print(prompt)
 
+        elif feature == "daily_card":
+
+            current_date = context.get("current_date", "")
+
+            prompt = PROMPT_TEMPLATES["daily_card_text_base"].render(
+                current_date=current_date,
+                arcana_number=main_arcana,
+                arcana_name=main_arcana_name,
+            )
+
         response = await self.client.responses.create(
             model=model, input=prompt, conversation=conversation_id
         )

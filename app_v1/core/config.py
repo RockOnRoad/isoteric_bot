@@ -10,11 +10,11 @@ load_dotenv()
 
 
 COST = {
-    "witchcraft": 10,
-    "reading": 1,
-    "ai_portrait": 2,
-    "daily_card": 2,
-    "follow_up": 1,
+    "witchcraft": 0,
+    "reading": 33,
+    "ai_portrait": 33,
+    "daily_card": 33,
+    "follow_up": 33,
 }
 
 

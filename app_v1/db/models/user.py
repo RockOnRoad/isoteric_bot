@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Literal, TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, BigInteger, func, ForeignKey
+from sqlalchemy import Date, DateTime, Enum, BigInteger, func, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.models.base import Base
@@ -14,33 +14,6 @@ if TYPE_CHECKING:
     from .referral_bonus import ReferralBonus
     from .generation_history import GenerationHistory
     from .user_source import UserSource
-
-
-# class User(Base):
-#     """User model."""
-
-#     user_id: Mapped[int] = mapped_column(
-#         BigInteger, unique=True, nullable=False
-#     )  # tg_id
-#     username: Mapped[str | None]
-#     first_name: Mapped[str | None]
-#     last_name: Mapped[str | None]
-#     mail: Mapped[str | None]
-#     balance: Mapped[int] = mapped_column(default=0)
-#     segment: Mapped[Segment] = mapped_column(
-#         Enum("lead", "qual", "client", "banned", name="segment_enum"), default="lead"
-#     )
-#     referred_id: Mapped[int | None] = mapped_column(nullable=True)
-#     name: Mapped[str | None]
-#     birthday: Mapped[str | None]
-#     sex: Mapped[Sex | None] = mapped_column(Enum("m", "f", name="sex_enum"))
-#     latest_conversation: Mapped[str | None]
-#     last_updated: Mapped[datetime] = mapped_column(
-#         DateTime(timezone=True),
-#         server_default=func.now(),
-#         onupdate=func.now(),
-#         nullable=False,
-#     )
 
 
 class User(Base):
@@ -72,12 +45,17 @@ class User(Base):
     sex: Mapped[Sex | None] = mapped_column(Enum("m", "f", name="sex_enum"))
     #  ID последнего запроса ChatGPT, нужен для сохранения контекста разговора
     latest_conversation: Mapped[str | None]
+    #  Дата последней полученной карты дня
+    latest_daily_card: Mapped[date | None] = mapped_column(Date(), nullable=True)
+
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
     )
+
+    #  ---------------- RELATIONS ----------------
 
     # Реферер (кто пригласил этого пользователя)
     referrer: Mapped["User | None"] = relationship(
