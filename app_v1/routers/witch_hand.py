@@ -23,7 +23,7 @@ from schemas import (
     ReadingsDomain,
     ReadingsStates,
 )
-from services import GoogleAI, OpenAIClient
+from services import GoogleAI, OpenAIClient, MessageAnimation
 
 logger = logging.getLogger(__name__)
 witch_rtr = Router()
@@ -38,13 +38,17 @@ witch_rtr = Router()
 async def stir_the_cauldron(
     call: CallbackQuery, state: FSMContext, db_session: AsyncSession
 ) -> None:
-    logger.info(f"{call.from_user.id} @{call.from_user.username} - 'stir_the_cauldron'")
+    # Отвечаем на callback query, чтобы разблокировать бота
+    await call.answer()
 
-    msg_generating_image = await call.message.edit_text(
-        f"🌀 Соединяюсь с полем твоей Матрицы..."
+    # Анимация сообщения во время генерации изображения
+    animation_while_generating_image = MessageAnimation(
+        message_or_call=call,
+        base_text="🌀 Соединяюсь с полем твоей Матрицы",
     )
+    animation_while_generating_image.start()
 
-    # #  updating user telegram info in database
+    # #  Обновляем данные пользователя в базе данных
     # user_id = call.from_user.id
     # username = call.from_user.username
     # first_name = call.from_user.first_name
@@ -61,7 +65,11 @@ async def stir_the_cauldron(
     }
     await state.clear()
 
-    #  generating image
+    #  updating user input info in database
+    user_id = call.from_user.id
+    await update_user_info(user_id, data, db_session)
+
+    #  Генерируем изображение
     client = GoogleAI()
     photo: BufferedInputFile | None = await client.generate_picture(
         feature="first",
@@ -71,21 +79,27 @@ async def stir_the_cauldron(
     # photo = FSInputFile(
     #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
     # )
+    # await asyncio.sleep(5)
 
-    #  updating user input info in database
-    user_id = call.from_user.id
-    await update_user_info(user_id, data, db_session)
-    await msg_generating_image.delete()
-    await asyncio.sleep(0.2)
-    msg_generating_text = await call.message.answer(
-        f"🔢 Рассчитываю центральный аркан ..."
+    await animation_while_generating_image.stop(delete_message=True)
+
+    # await asyncio.sleep(0.2)
+    # msg_generating_text = await call.message.answer(
+    #     f"🔢 Рассчитываю центральный аркан ..."
+    # )
+    animation_while_generating_text = MessageAnimation(
+        message_or_call=call,
+        base_text="🔢 Рассчитываю центральный аркан",
     )
+    animation_while_generating_text.start()
 
     # getting message
     client = OpenAIClient(auto_create_conv=False)
     answer, conversation_id = await client.chatgpt_response(
         feature="first", context=data
     )
+    # answer = f"{data['name']}, я получила твой центральный код"
+    # await asyncio.sleep(5)
 
     readings_main_buttons = {
         "💸 Деньги": ReadingsDomain(button="wealth").pack(),
@@ -97,9 +111,9 @@ async def stir_the_cauldron(
     }
     kbd = InlineKbd(buttons=readings_main_buttons, width=2)
 
-    await msg_generating_text.delete()
+    await animation_while_generating_text.stop(delete_message=True)
+
     try:
-        # caption = f"{data['name']}, я получила твой центральный код"
         await call.message.answer_photo(
             photo=photo,
             caption=answer,
@@ -113,9 +127,6 @@ async def stir_the_cauldron(
     user = await get_user_by_telegram_id(call.from_user.id, db_session)
     await state.set_state(ReadingsStates.witch)
     await state.update_data(name=user.name, birthday=user.birthday, sex=user.sex)
-
-    # await call.message.answer(answer, reply_markup=kbd.markup)
-    # await call.message.answer("answer", reply_markup=kbd.markup)
 
 
 #  ----------- FOLLOW UP RESPONSE -----------
