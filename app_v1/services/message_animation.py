@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import time
+from time import time
 
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, CallbackQuery
@@ -42,13 +42,13 @@ class MessageAnimation:
         """Внутренний метод для анимации сообщения."""
         dot_index = 0
         first_update = True
-        start_time = time.time()
+        start_time = time()
 
         while not self.animation_stop.is_set():
             try:
                 # Проверяем таймаут
                 if self.timeout is not None:
-                    elapsed_time = time.time() - start_time
+                    elapsed_time = time() - start_time
                     if elapsed_time >= self.timeout:
                         logger.warning(
                             f"Animation timeout reached ({self.timeout}s), stopping animation"
