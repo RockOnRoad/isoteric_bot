@@ -71,7 +71,7 @@ async def handle_daily_card_main(
         #  Получаем текст
         client = OpenAIClient(auto_create_conv=True)
         answer, conversation_id = await client.chatgpt_response(
-            feature="daily_card", context=context
+            feature="daily_card", context=context, max_length=1020
         )
 
         context["chatGPT_answer"] = answer

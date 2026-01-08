@@ -1,4 +1,5 @@
 import base64
+import logging
 import yaml
 from pathlib import Path
 
@@ -7,6 +8,8 @@ from openai import AsyncOpenAI
 from core.config import settings
 from prompts import PROMPT_TEMPLATES
 from services import calculate_arcana, ARCANA_MAP
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIClient:
@@ -86,6 +89,8 @@ class OpenAIClient:
         context: dict,
         *,
         model: str = "gpt-5.1-chat-latest",
+        max_length: int = 4090,
+        max_attempts: int = 5,
     ) -> tuple[str, str]:
         """
         Получить ответ от ChatGPT.
@@ -147,7 +152,7 @@ class OpenAIClient:
                 main_arcana_name=main_arcana_name,
                 aspect=aspect_name,
             )
-            print(prompt)
+            # print(prompt)
 
         elif feature == "first":
             bio = PROMPT_TEMPLATES["first_text_context"].render(
@@ -175,10 +180,21 @@ class OpenAIClient:
                 arcana_name=main_arcana_name,
             )
 
-        response = await self.client.responses.create(
-            model=model, input=prompt, conversation=conversation_id
-        )
-        return response.output_text, conversation_id
+        try:
+            attempts = 0
+            answer = ""
+            while answer == "" or len(answer) > max_length:
+                attempts += 1
+                if attempts > max_attempts:
+                    break  #  Здесь нужно выводить сообщение об ошибке
+                response = await self.client.responses.create(
+                    model=model, input=prompt, conversation=conversation_id
+                )
+                answer = response.output_text
+            return answer, conversation_id
+        except Exception as e:
+            logger.error(f"Error generating response: {e}")
+            return "", conversation_id
 
     async def chatgpt_response_follow_up(
         self,

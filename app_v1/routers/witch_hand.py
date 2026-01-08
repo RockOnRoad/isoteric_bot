@@ -96,7 +96,7 @@ async def stir_the_cauldron(
     # getting message
     client = OpenAIClient(auto_create_conv=False)
     answer, conversation_id = await client.chatgpt_response(
-        feature="first", context=data
+        feature="first", context=data, max_length=1020
     )
     # answer = f"{data['name']}, я получила твой центральный код"
     # await asyncio.sleep(5)

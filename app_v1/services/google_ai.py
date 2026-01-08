@@ -1,5 +1,6 @@
-from io import BytesIO
+import logging
 import yaml
+from io import BytesIO
 from pathlib import Path
 
 from aiogram.fsm.context import FSMContext
@@ -11,41 +12,14 @@ from core.config import settings
 from prompts import PROMPT_TEMPLATES
 from services import ARCANA_MAP, calculate_arcana
 
+logger = logging.getLogger(__name__)
+
 
 class GoogleAI:
     """Сервис для работы с Google Gemini API."""
 
     def __init__(self, api_key: str | None = None):
         self.client: Client = Client(api_key=settings.google_api_key)
-
-    # def generate_content(
-    #     self,
-    #     model: str = "gemini-2.5-flash-image",
-    #     contents: str | list = "",
-    # ):
-    #     """
-    #     Генерирует контент с помощью модели Gemini.
-
-    #     Args:
-    #         model: Название модели для использования.
-    #         contents: Текст или список содержимого для генерации.
-
-    #     Returns:
-    #         Ответ от API с сгенерированным контентом.
-    #     """
-
-    #     config = GenerateContentConfig(
-    #         response_modalities=["IMAGE"],
-    #         image_config=ImageConfig(
-    #             aspect_ratio="16:9",
-    #         ),
-    #     )
-
-    #     return self.client.models.generate_content(
-    #         model=model,
-    #         contents=contents,
-    #         config=config,
-    #     )
 
     async def generate_picture(
         self,
@@ -144,21 +118,26 @@ class GoogleAI:
             ),
         )
 
-        response = self.client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=config,
-        )
-        for part in response.parts:
-            if part.inline_data:
-                # Получаем байты изображения напрямую из inline_data
-                img_bytes: BytesIO = BytesIO(part.inline_data.data)
-                img_bytes.seek(0)
-
-                photo: BufferedInputFile = BufferedInputFile(
-                    img_bytes.getvalue(), filename="portrait.jpg"
+        try:
+            for attempt in range(5):
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=config,
                 )
-                return photo
+                for part in response.parts:
+                    if part.inline_data:
+                        # Получаем байты изображения напрямую из inline_data
+                        img_bytes: BytesIO = BytesIO(part.inline_data.data)
+                        img_bytes.seek(0)
+
+                        photo: BufferedInputFile = BufferedInputFile(
+                            img_bytes.getvalue(), filename="portrait.jpg"
+                        )
+                        return photo
+        except Exception as e:
+            logger.error(f"Error generating picture: {e}")
+
         return None
 
     async def google_models(self) -> list[str]:

@@ -187,7 +187,7 @@ async def handle_response(
         context["aspect"] = callback_data.aspect
 
         #  Getting response from OpenAI
-        client = OpenAIClient(auto_create_conv=True)
+        client = OpenAIClient(auto_create_conv=False)
         answer, conversation_id = await client.chatgpt_response(
             feature="readings", context=context
         )
@@ -200,12 +200,14 @@ async def handle_response(
 
         user = await get_user_by_telegram_id(call.from_user.id, db_session)
 
+        #  Списание энергии
         new_balance = await decrease_user_balance(
             user.id,
             COST["reading"],
             db_session,
         )
 
+        #  Обновляем стоимость следующего разбора
         await state.update_data(cost=COST["follow_up"])
 
         #  Отправка ответа
