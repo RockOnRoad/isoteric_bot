@@ -22,4 +22,4 @@ RUN pip install --upgrade pip \
     && pip install .
 
 # Запуск приложения
-CMD ["python", "-m", "app_v1.main"]
+CMD ["python3", "app_v1/main.py", "prod"]

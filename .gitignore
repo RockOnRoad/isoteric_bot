@@ -13,6 +13,8 @@ wheels/
 .env
 .env.dev
 .env.prod
+.env.test
+.env.local
 
 # IDE
 .cursor/
