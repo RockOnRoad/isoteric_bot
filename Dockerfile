@@ -1,21 +1,25 @@
-FROM python:3.12-slim
+FROM python:3.12.11-slim
 
 WORKDIR /app
 
-# Установка uv для управления зависимостями
-RUN pip install uv
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	gcc \
+    build-essential \
+    bash \
+    procps \
+    iputils-ping \
+    curl \
+    wget \
+    nmap \
+    htop \
+ && rm -rf /var/lib/apt/lists/*
 
-# Копирование файлов зависимостей
-COPY pyproject.toml uv.lock ./
+ # Копируем только метаданные сначала (оптимизация кеша)
+COPY pyproject.toml uv.lock* ./
 
-# Установка зависимостей
-RUN uv pip install --system -r pyproject.toml
-
-# Копирование кода приложения
-COPY . .
-
-# Установка переменной окружения для Python
-ENV PYTHONPATH=/app
+# Устанавливаем зависимости
+RUN pip install --upgrade pip \
+    && pip install .
 
 # Запуск приложения
 CMD ["python", "-m", "app_v1.main"]
