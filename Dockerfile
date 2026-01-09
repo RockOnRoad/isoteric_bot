@@ -2,7 +2,7 @@ FROM python:3.12.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+ RUN apt-get update && apt-get install -y --no-install-recommends \
 	gcc \
     build-essential \
     bash \
@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     nmap \
     htop \
+    git \
+    nano \
+    mc \
  && rm -rf /var/lib/apt/lists/*
 
  # Копируем только метаданные сначала (оптимизация кеша)

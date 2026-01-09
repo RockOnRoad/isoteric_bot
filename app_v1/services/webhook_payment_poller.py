@@ -40,9 +40,11 @@ class WebhookServer:
             str(default_key) if default_key.exists() else None
         )
         self.allowed_subnets: tuple[IPv4Network, ...] = (
+            ip_network("127.0.0.0/8"),  # localhost
             ip_network("185.6.233.0/24"),
             ip_network("185.6.234.0/24"),
             ip_network("77.75.153.0/25"),
+            ip_network("172.16.0.0/12"),
         )
         creds = f"{settings.yk.test_shop_id}:{settings.yk.test_key}"
         token = base64.b64encode(creds.encode()).decode()
