@@ -79,7 +79,7 @@ async def main() -> None:
     except KeyboardInterrupt:
         logger.info("Bot stopped by user.")
     finally:
-        await payment_poller.stop()  # Останавливаем опрос при завершении
+        # await payment_poller.stop()  # Останавливаем опрос при завершении
         await webhook_server.stop()
         await bot.session.close()
         await dp.fsm.storage.close()

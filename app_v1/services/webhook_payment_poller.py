@@ -61,18 +61,18 @@ class WebhookServer:
         try:
             ip_obj = ip_address(client_ip)
         except ValueError:
-            logger.warning("Webhook отклонен: IP не распознан (%s)", client_ip)
+            logger.warning("Webhook rejected: IP not recognized (%s)", client_ip)
             return False
 
         if not any(ip_obj in subnet for subnet in self.allowed_subnets):
             logger.warning(
-                "Webhook отклонен: IP %s вне доверенных диапазонов", client_ip
+                "Webhook rejected: IP %s is outside allowed ranges", client_ip
             )
             return False
 
         auth_header = request.headers.get("Authorization", "")
         if auth_header != self.expected_auth_header:
-            logger.warning("Webhook отклонен: некорректный заголовок Authorization")
+            logger.warning("Webhook rejected: invalid Authorization header")
             return False
 
         return True
@@ -88,7 +88,7 @@ class WebhookServer:
         try:
             payload = await request.json()
         except Exception:
-            logger.warning("Некорректный JSON в webhook'е: %s", body)
+            logger.warning("Invalid JSON in webhook: %s", body)
             return Response(status=400, text="Bad Request")
 
         event = payload.get("event")
@@ -97,11 +97,11 @@ class WebhookServer:
         status = payment_data.get("status")
 
         if not payment_id or not status:
-            logger.warning("Webhook без обязательных полей: %s", payload)
+            logger.warning("Webhook missing required fields: %s", payload)
             return Response(status=400, text="Missing payment data")
 
         logger.info(
-            "Получен webhook: event=%s payment_id=%s status=%s",
+            "Webhook received: event=%s payment_id=%s status=%s",
             event,
             payment_id,
             status,
@@ -117,11 +117,11 @@ class WebhookServer:
                 return Response(status=200, text="OK")
 
             logger.info(
-                "Webhook с нецелевым статусом %s для платежа %s", status, payment_id
+                "Webhook with unexpected status %s for payment %s", status, payment_id
             )
             return Response(status=200, text="Ignored")
         except Exception as exc:
-            logger.exception("Ошибка обработки webhook'а %s: %s", payment_id, exc)
+            logger.exception("Error processing webhook %s: %s", payment_id, exc)
             return Response(status=500, text="Internal Server Error")
 
     async def _handle_successful_payment(self, payment_id: str) -> bool:
@@ -130,11 +130,11 @@ class WebhookServer:
             payment = await get_payment_by_payment_id(payment_id, session)
 
             if not payment:
-                logger.warning("Платеж %s не найден в базе", payment_id)
+                logger.warning("Payment %s not found in database", payment_id)
                 return True  # Возвращаем 200, чтобы не получать повторов
 
             if payment.status == "completed":
-                logger.info("Платеж %s уже обработан ранее", payment_id)
+                logger.info("Payment %s was already processed earlier", payment_id)
                 return True
 
             # Фиксируем успешный статус перед начислением
@@ -148,7 +148,7 @@ class WebhookServer:
             topup_routine = TopupRoutine(session=session, user_id=payment.user_id)
             await topup_routine.process_successful_payment(payment=payment)
 
-            logger.info("Платеж %s обработан через webhook", payment_id)
+            logger.info("Payment %s processed via webhook", payment_id)
             return True
 
     async def _handle_canceled_payment(self, payment_id: str) -> None:
@@ -156,7 +156,7 @@ class WebhookServer:
         async with AsyncSessionLocal() as session:
             payment = await get_payment_by_payment_id(payment_id, session)
             if not payment:
-                logger.warning("Платеж %s для отмены не найден", payment_id)
+                logger.warning("Payment %s not found for cancellation", payment_id)
                 return
 
             if payment.status == "canceled":
@@ -167,7 +167,7 @@ class WebhookServer:
                 status="canceled",
                 session=session,
             )
-            logger.info("Платеж %s отмечен как отмененный", payment_id)
+            logger.info("Payment %s marked as canceled", payment_id)
 
     async def health_check(self, request: web_request.Request) -> Response:
         """Проверка здоровья сервера."""
@@ -184,19 +184,19 @@ class WebhookServer:
             try:
                 ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
                 ssl_context.load_cert_chain(self.ssl_cert_path, self.ssl_key_path)
-                logger.info("SSL сертификат загружен: %s", self.ssl_cert_path)
+                logger.info("SSL certificate loaded: %s", self.ssl_cert_path)
             except Exception as exc:
-                logger.error("Ошибка загрузки SSL сертификата: %s", exc)
-                logger.warning("Запускаем без SSL (только HTTP)")
+                logger.error("Error loading SSL certificate: %s", exc)
+                logger.warning("Starting without SSL (HTTP only)")
                 ssl_context = None
 
         site = web.TCPSite(runner, "0.0.0.0", self.port, ssl_context=ssl_context)
         await site.start()
 
         protocol = "HTTPS" if ssl_context else "HTTP"
-        logger.info("Webhook сервер запущен на порту %s (%s)", self.port, protocol)
+        logger.info("Webhook server started on port %s (%s)", self.port, protocol)
         logger.info(
-            "URL webhook: %s://%s:%s/webhook/yookassa",
+            "Webhook URL: %s://%s:%s/webhook/yookassa",
             "https" if ssl_context else "http",
             "localhost",
             self.port,
@@ -206,9 +206,9 @@ class WebhookServer:
         """Остановка сервера."""
         try:
             await self.app.cleanup()
-            logger.info("Webhook сервер остановлен")
+            logger.info("Webhook server stopped")
         except Exception as exc:
-            logger.error("Ошибка остановки webhook сервера: %s", exc)
+            logger.error("Error stopping webhook server: %s", exc)
 
 
 # Глобальный экземпляр для быстрого запуска
