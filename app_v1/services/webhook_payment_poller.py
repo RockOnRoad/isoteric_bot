@@ -22,7 +22,7 @@ class WebhookServer:
 
     def __init__(
         self,
-        port: int = 8443,
+        port: int = 8000,
         bot=None,
         ssl_cert_path: str | None = None,
         ssl_key_path: str | None = None,
