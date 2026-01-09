@@ -11,6 +11,8 @@ wheels/
 
 # Environment variables
 .env
+.env.dev
+.env.prod
 
 # IDE
 .cursor/

@@ -1,3 +1,4 @@
+import sys
 from dotenv import load_dotenv
 from pydantic import Field, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,6 +10,7 @@ from aiogram.enums import ParseMode
 load_dotenv()
 
 
+ENV = sys.argv[1]
 COST = {
     "witchcraft": 0,
     "reading": 33,
@@ -25,6 +27,7 @@ class YKPaymentsConfig(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
+        env_file=f".env.{ENV}",
         env_prefix="BOT_",
         env_nested_delimiter="__",
     )

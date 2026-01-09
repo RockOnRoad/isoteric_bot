@@ -196,18 +196,3 @@ async def get_user_referrals(user_id: int, session: AsyncSession) -> list[User]:
     stmt = select(User).where(User.referred_id == user_id)
     result = await session.execute(stmt)
     return result.scalars().all()
-
-
-#  --------------- UPDATE USER SEGMENT ---------------
-
-
-async def update_user_segment(
-    user_id: int, segment: str, session: AsyncSession
-) -> None:
-    """Update user segment."""
-    stmt = update(User).where(User.id == user_id).values(segment=segment)
-    await session.execute(stmt)
-    if commit:
-        await session.commit()
-    else:
-        await session.flush()
