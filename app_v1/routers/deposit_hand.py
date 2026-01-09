@@ -1,6 +1,4 @@
 import logging
-from re import T
-from math import ceil
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
@@ -9,18 +7,14 @@ from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.crud import (
-    get_user,
     get_user_by_telegram_id,
     create_payment,
     get_payment_by_payment_id,
-    update_payment_status,
-    increase_user_balance,
     update_user_info,
-    create_referral_bonus,
 )
 from keyboards import InlineKbd
-from schemas import LkTopUp, YKOperations, EmailStates, TARIFFS, REFERRAL_BONUS_PERCENT
-from services import PaymentService
+from schemas import LkTopUp, YKOperations, EmailStates, TARIFFS
+from services import PaymentService, TopupRoutine
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -181,46 +175,13 @@ async def payment_status(
             user = await get_user_by_telegram_id(
                 tg_id=call.from_user.id, session=db_session
             )
+            if user is None:
+                logger.error(f"User with tg_id {call.from_user.id} not found")
+                return
 
-            # Начисляем кредиты из платежа, а не рубли из статуса
-            await increase_user_balance(
-                user_id=user.id,
-                amount=payment.amount,
-                session=db_session,
-            )
-            await update_payment_status(
-                payment_id=callback_data.payment_id,
-                status="completed",
-                session=db_session,
-            )
-            if user.referred_id:
-
-                referrer = await get_user(id=user.referred_id, session=db_session)
-
-                bonus_amount = ceil(payment.amount * REFERRAL_BONUS_PERCENT)
-
-                #  Создаем запись в бд о начислении бонуса
-                ref_bonus_data = {
-                    "ref_id": user.id,
-                    "referred_user_id": call.from_user.id,
-                    "referrer_user_id": referrer.user_id,
-                    "bonus_type": "deposit",
-                    "amount": bonus_amount,
-                    "deposit_rub_amount": payment.rub_amount,
-                    "deposit_token_amount": payment.amount,
-                    "pay_id": payment.id,
-                }
-                await create_referral_bonus(
-                    data=ref_bonus_data,
-                    session=db_session,
-                )
-
-                #  Начисляем бонус рефереру
-                await increase_user_balance(
-                    user_id=referrer.id,
-                    amount=bonus_amount,
-                    session=db_session,
-                )
+            #  Запускаем рутину пополнения баланса
+            topup_routine = TopupRoutine(session=db_session, user_id=user.id)
+            await topup_routine.process_successful_payment(payment=payment)
 
         await call.message.edit_text(
             (

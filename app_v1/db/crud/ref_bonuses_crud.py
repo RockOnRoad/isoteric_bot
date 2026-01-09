@@ -14,6 +14,7 @@ async def create_referral_bonus(
     *,
     data: dict,
     session: AsyncSession,
+    commit: bool = True,
 ) -> ReferralBonus:
     stmt = (
         insert(ReferralBonus)
@@ -25,10 +26,14 @@ async def create_referral_bonus(
     try:
         result = await session.execute(stmt)
         referral_bonus = result.scalar_one()
-        await session.commit()
+        if commit:
+            await session.commit()
+        else:
+            await session.flush()
         return referral_bonus
     except SQLAlchemyError:
-        await session.rollback()
+        if commit:
+            await session.rollback()
         raise
 
 

@@ -1,4 +1,3 @@
-from math import ceil
 import logging
 from typing import Optional
 
@@ -6,14 +5,11 @@ import asyncio
 
 from db.database import AsyncSessionLocal
 from db.crud import (
-    get_user,
     get_pending_payments,
     update_payment_status,
-    increase_user_balance,
-    create_referral_bonus,
 )
 from services.yk_payments import PaymentService
-from schemas.lk_sch import TARIFFS, REFERRAL_BONUS_PERCENT
+from services.topup_routine import TopupRoutine
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +32,7 @@ class PaymentPoller:
         """Проверяет все незавершенные платежи и обновляет их статусы."""
         async with AsyncSessionLocal() as session:
             try:
-                pending_payments = await get_pending_payments(session)
+                pending_payments = await get_pending_payments(session=session)
 
                 if not pending_payments:
                     return
@@ -49,52 +45,60 @@ class PaymentPoller:
                         status_success_data = payment_service.get_status_success()
 
                         if status_success_data:
-                            # Платеж успешен
-                            await update_payment_status(
-                                payment_id=payment.payment_id,
-                                status="completed",
-                                session=session,
+
+                            topup_routine = TopupRoutine(
+                                session=session, user_id=payment.user_id
+                            )
+                            await topup_routine.process_successful_payment(
+                                payment=payment
                             )
 
-                            await increase_user_balance(
-                                user_id=payment.user_id,
-                                amount=payment.amount,
-                                session=session,
-                            )
+                            # # Платеж успешен
+                            # await update_payment_status(
+                            #     payment_id=payment.payment_id,
+                            #     status="completed",
+                            #     session=session,
+                            # )
 
-                            user = await get_user(id=payment.user_id, session=session)
-                            if user.referred_id:
+                            # await increase_user_balance(
+                            #     user_id=payment.user_id,
+                            #     amount=payment.amount,
+                            #     session=session,
+                            # )
 
-                                referrer = await get_user(
-                                    id=user.referred_id, session=session
-                                )
+                            # user = await get_user(id=payment.user_id, session=session)
+                            # if user.referred_id:
 
-                                bonus_amount = ceil(
-                                    payment.amount * REFERRAL_BONUS_PERCENT
-                                )
+                            #     referrer = await get_user(
+                            #         id=user.referred_id, session=session
+                            #     )
 
-                                #  Создаем запись в бд о начислении бонуса
-                                ref_bonus_data = {
-                                    "ref_id": user.id,
-                                    "referred_user_id": user.user_id,
-                                    "referrer_user_id": referrer.user_id,
-                                    "bonus_type": "deposit",
-                                    "amount": bonus_amount,
-                                    "deposit_rub_amount": payment.rub_amount,
-                                    "deposit_token_amount": payment.amount,
-                                    "pay_id": payment.id,
-                                }
-                                await create_referral_bonus(
-                                    data=ref_bonus_data,
-                                    session=session,
-                                )
+                            #     bonus_amount = ceil(
+                            #         payment.amount * REFERRAL_BONUS_PERCENT
+                            #     )
 
-                                #  Начисляем бонус рефереру
-                                await increase_user_balance(
-                                    user_id=referrer.id,
-                                    amount=bonus_amount,
-                                    session=session,
-                                )
+                            #     #  Создаем запись в бд о начислении бонуса
+                            #     ref_bonus_data = {
+                            #         "ref_id": user.id,
+                            #         "referred_user_id": user.user_id,
+                            #         "referrer_user_id": referrer.user_id,
+                            #         "bonus_type": "deposit",
+                            #         "amount": bonus_amount,
+                            #         "deposit_rub_amount": payment.rub_amount,
+                            #         "deposit_token_amount": payment.amount,
+                            #         "pay_id": payment.id,
+                            #     }
+                            #     await create_referral_bonus(
+                            #         data=ref_bonus_data,
+                            #         session=session,
+                            #     )
+
+                            #     #  Начисляем бонус рефереру
+                            #     await increase_user_balance(
+                            #         user_id=referrer.id,
+                            #         amount=bonus_amount,
+                            #         session=session,
+                            #     )
 
                             logger.info(
                                 f"Payment {payment.payment_id} completed. \n"

@@ -76,12 +76,17 @@ async def upsert_user(
 #  --------------- ADD PARAMETERS TO USER  ---------------
 
 
-async def update_user_info(user_id: int, data: dict, session: AsyncSession) -> None:
+async def update_user_info(
+    user_id: int, data: dict, session: AsyncSession, commit: bool = True
+) -> None:
     """Update user info."""
     try:
         stmt = update(User).where(User.user_id == user_id).values(data)
         await session.execute(stmt)
-        await session.commit()
+        if commit:
+            await session.commit()
+        else:
+            await session.flush()
 
     except (DBAPIError, SQLAlchemyError) as e:
         logger.exception(
@@ -159,6 +164,7 @@ async def increase_user_balance(
     user_id: int,
     amount: int,
     session: AsyncSession,
+    commit: bool = True,
 ) -> int | None:
     if amount <= 0:
         raise ValueError("amount must be positive")
@@ -171,7 +177,10 @@ async def increase_user_balance(
     )
 
     result = await session.execute(stmt)
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
     new_balance = result.scalar_one_or_none()
 
     logger.info(f"User {user_id} balance +{amount} -> {new_balance}")
@@ -187,3 +196,18 @@ async def get_user_referrals(user_id: int, session: AsyncSession) -> list[User]:
     stmt = select(User).where(User.referred_id == user_id)
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+#  --------------- UPDATE USER SEGMENT ---------------
+
+
+async def update_user_segment(
+    user_id: int, segment: str, session: AsyncSession
+) -> None:
+    """Update user segment."""
+    stmt = update(User).where(User.id == user_id).values(segment=segment)
+    await session.execute(stmt)
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()

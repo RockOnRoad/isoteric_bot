@@ -76,6 +76,7 @@ async def update_payment_status(
     status: PaymentStatus,
     completed_at: Optional[datetime] = None,
     session: AsyncSession,
+    commit: bool = True,
 ) -> Optional[Payment]:
     """
     Обновляет статус платежа.
@@ -106,11 +107,16 @@ async def update_payment_status(
             )
             await session.execute(stmt)
 
-        await session.commit()
-        await session.refresh(payment)
+        if commit:
+            await session.commit()
+            await session.refresh(payment)
+        else:
+            await session.flush()
+
         return payment
     except SQLAlchemyError as e:
-        await session.rollback()
+        if commit:
+            await session.rollback()
         logger.error(f"Error updating payment status: {e}")
         raise
 

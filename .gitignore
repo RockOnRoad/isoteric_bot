@@ -33,3 +33,6 @@ docker-compose.yaml
 
 # Tests
 tests/
+
+# SSL
+ssl/

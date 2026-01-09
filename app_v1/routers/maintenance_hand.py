@@ -36,6 +36,27 @@ class AdminCheck(Filter):
         return str(update.from_user.id) in settings.admins
 
 
+#  ----------- ADMIN HELP -----------
+
+
+@mnt_rtr.message(Command("a-help"), AdminCheck())
+async def a_help(update: Message | CallbackQuery, state: FSMContext) -> None:
+
+    text = (
+        "<b>Админские подсказки:</b>\n"
+        "/arcana - вычисление аркана даты рождения\n"
+        "/models_openai - доступные модели OpenAI\n"
+        "/templates - тест шаблонизатора\n"
+        "/image - генерация изображения с помощью OpenAI\n"
+        "/models_google - доступные модели Gemini\n"
+        "/delete - тест удаления сообщений\n"
+        "/withdraw &lt;user_id&gt; &lt;amount&gt; - снятие баланса\n"
+        "/deposit &lt;user_id&gt; &lt;amount&gt; - пополнение баланса\n"
+    )
+
+    await update.answer(text)
+
+
 #  ----------- CALCULATE ARCANA -----------
 
 
@@ -57,9 +78,6 @@ async def arcana(update: Message | CallbackQuery, state: FSMContext) -> None:
 
 mnt_rtr.message.register(arcana, Command("arcana"))
 mnt_rtr.callback_query.register(arcana, CalculateArcana.filter(F.button == "calculate"))
-
-
-#  ----------- WRITE BIRTHDAY -----------
 
 
 @mnt_rtr.message(ArcanaStates.arcana)
@@ -87,7 +105,7 @@ async def handle_arcana_message(message: Message, state: FSMContext) -> None:
 #  ----------- CURRENT MODELS -----------
 
 
-@mnt_rtr.message(Command("models"), AdminCheck())
+@mnt_rtr.message(Command("models_openai"), AdminCheck())
 async def models(update: Message | CallbackQuery, state: FSMContext) -> None:
 
     client = OpenAIClient()
@@ -126,7 +144,7 @@ async def image(update: Message | CallbackQuery, state: FSMContext) -> None:
 #  ----------- GOOGLE IMAGE -----------
 
 
-@mnt_rtr.message(Command("google_models"), AdminCheck())
+@mnt_rtr.message(Command("models_google"), AdminCheck())
 async def google_image(update: Message | CallbackQuery, state: FSMContext) -> None:
     client = GoogleAI()
     models = client.google_models()
