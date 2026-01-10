@@ -1,5 +1,7 @@
 __all__ = (
     "get_user",
+    "get_last_added_user",
+    "get_last_added_user_id",
     "upsert_user",
     "get_user_by_telegram_id",
     "update_user_info",
@@ -19,6 +21,8 @@ __all__ = (
 
 from .users_crud import (
     get_user,
+    get_last_added_user,
+    get_last_added_user_id,
     upsert_user,
     get_user_by_telegram_id,
     update_user_info,

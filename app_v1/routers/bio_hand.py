@@ -57,8 +57,6 @@ async def handle_start_command(
     state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
-    logger.info(f"{message.from_user.id} @{message.from_user.username} - '/start'")
-
     await state.clear()
 
     user = await get_user_by_telegram_id(tg_id=message.from_user.id, session=db_session)

@@ -1,10 +1,16 @@
 import logging
+from math import e
 from aiogram.filters import CommandObject
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
-from db.crud import upsert_user, add_entry_to_user_sources
+from db.crud import (
+    upsert_user,
+    add_entry_to_user_sources,
+    get_user,
+    get_last_added_user_id,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -26,18 +32,35 @@ async def first_start_routine(
         f"{message.from_user.id} @{message.from_user.username} - 'first_start_routine'"
     )
 
+    # Сначала вытаскиваем реферера и остальные параметры из payload
     referrer = None
-    if command.args:
-        #  Собираем payload команды start
-        source = command.args.split("_")[0]
+    referrer_id = None
+    sources: list[tuple[str, str]] = []
 
-        #  Добавляем реферера, ежели таковой имеется
-        if source == "ref":
-            try:
-                referrer = int(command.args.split("_")[1])
-            except AttributeError:
-                logger.error(f"Ref. link has no referrer id (ref_...)")
-                return
+    if command.args:
+        source_parts = command.args.split("_")
+        for key, value in zip(source_parts[::2], source_parts[1::2]):
+            if key == "ref":
+                try:
+                    referrer = int(value)
+                except (TypeError, ValueError):
+                    logger.warning("Invalid ref: %s", value)
+                    continue
+                last_added_user_id = await get_last_added_user_id(db_session)
+                #  Если это самый первый пользователь
+                if last_added_user_id:
+                    current_user = last_added_user_id + 1
+                else:
+                    current_user = 1
+                if referrer != current_user:
+                    user_by_ref = await get_user(referrer, db_session)
+                    if not user_by_ref:
+                        logger.info("Referrer %s not found", referrer)
+                        continue
+                    referrer_id = referrer
+                continue
+
+            sources.append((str(key), str(value)))
 
     try:
         user = await upsert_user(
@@ -45,16 +68,22 @@ async def first_start_routine(
             username=message.from_user.username,
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
-            referred_id=referrer,
+            referred_id=referrer_id,
             session=db_session,
         )
     except IntegrityError:
         return None
 
-    if command.args:
-        #  Добавляем источник прихода пользователя
-        await add_entry_to_user_sources(
-            user_id=user.id, source=command.args, session=db_session
-        )
+    # Добавляем источники (коммитим один раз в конце, если есть что писать)
+    if sources:
+        for key, value in sources:
+            await add_entry_to_user_sources(
+                user_id=user.id,
+                source_key=key,
+                source_value=value,
+                session=db_session,
+                commit=False,
+            )
+        await db_session.commit()
 
     return user

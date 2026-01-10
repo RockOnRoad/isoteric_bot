@@ -218,3 +218,15 @@ async def deposit_balance(
 
     new_balance = await increase_user_balance(user.id, int(amount), db_session)
     await message.answer(f"Баланс: {new_balance}")
+
+
+#  ----------- SPLIT IN PAIRS -----------
+
+
+@mnt_rtr.message(Command("zip"), AdminCheck())
+async def zips(message: Message, state: FSMContext) -> None:
+    text = message.text.split()[1]
+    one_by_one = text.split("_")
+    await message.answer(f"Length: {len(one_by_one)}")
+    for key, value in zip(one_by_one[::2], one_by_one[1::2]):
+        await message.answer(f"{key}: {value}")

@@ -25,6 +25,26 @@ async def get_user(id: int, session: AsyncSession | None = None) -> User | None:
     return result.scalar_one_or_none()
 
 
+#  --------------- GET LAST ADDED USER ---------------
+
+
+async def get_last_added_user(session: AsyncSession) -> User | None:
+    """Get last added user."""
+    stmt = select(User).order_by(User.id.desc()).limit(1)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+#  --------------- GET LAST ADDED USER ID ---------------
+
+
+async def get_last_added_user_id(session: AsyncSession) -> int | None:
+    """Get last added user ID."""
+    stmt = select(func.max(User.id))
+    result = await session.execute(stmt)
+    return result.scalar()
+
+
 #  --------------- UPSERT ---------------
 
 
