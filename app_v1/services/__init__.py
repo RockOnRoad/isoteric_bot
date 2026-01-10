@@ -8,6 +8,7 @@ __all__ = [
     "PaymentService",
     "TopupRoutine",
     "WebhookServer",
+    "start_fastapi",
 ]
 
 from .arcana_serv import calculate_arcana, ARCANA_MAP
@@ -18,5 +19,6 @@ from .payment_poller import PaymentPoller
 from .yk_payments import PaymentService
 from .topup_routine import TopupRoutine
 from .webhook_payment_poller import WebhookServer
+from .fastapi_webhook_server import start_fastapi
 
 # from .start_payload import parse_start_payload

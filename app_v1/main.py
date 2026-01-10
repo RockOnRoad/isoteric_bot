@@ -11,7 +11,7 @@ from db.models import Base
 from routers import router
 from core.config import settings, bot
 from middlewares import DatabaseMiddleware
-from services import PaymentPoller, WebhookServer
+from services import PaymentPoller, start_fastapi
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +58,7 @@ async def main() -> None:
     # await payment_poller.start()
     # logger.info("Payment poller started.")
 
-    # Initialize webhook listener for YooKassa
-    webhook_server = WebhookServer(port=8443, bot=bot)
-    await webhook_server.start()
-    logger.info("Webhook server started.")
+    asyncio.create_task(start_fastapi())
 
     # Initialize dispatcher
     dp = Dispatcher()
@@ -80,7 +77,6 @@ async def main() -> None:
         logger.info("Bot stopped by user.")
     finally:
         # await payment_poller.stop()  # Останавливаем опрос при завершении
-        await webhook_server.stop()
         await bot.session.close()
         await dp.fsm.storage.close()
 

@@ -52,6 +52,7 @@ async def a_help(update: Message | CallbackQuery, state: FSMContext) -> None:
         "/delete - тест удаления сообщений\n"
         "/withdraw &lt;user_id&gt; &lt;amount&gt; - снятие баланса\n"
         "/deposit &lt;user_id&gt; &lt;amount&gt; - пополнение баланса\n"
+        "/zip &lt;text&gt; - разделение текста на пары\n"
     )
 
     await update.answer(text)
