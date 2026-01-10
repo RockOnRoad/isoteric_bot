@@ -24,6 +24,7 @@ dc_rtr = Router()
 async def handle_daily_card_main(
     update: Message | CallbackQuery, state: FSMContext, db_session: AsyncSession
 ) -> None:
+    logger.info(f"{update.from_user.id} @{update.from_user.username} - 'daily_card'")
 
     await state.clear()
 

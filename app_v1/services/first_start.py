@@ -32,11 +32,11 @@ async def first_start_routine(
         f"{message.from_user.id} @{message.from_user.username} - 'first_start_routine'"
     )
 
-    # Сначала вытаскиваем реферера и остальные параметры из payload
     referrer = None
     referrer_id = None
     sources: list[tuple[str, str]] = []
 
+    # Сначала вытаскиваем реферера и остальные параметры из payload
     if command.args:
         source_parts = command.args.split("_")
         for key, value in zip(source_parts[::2], source_parts[1::2]):
