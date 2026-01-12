@@ -37,8 +37,8 @@ async def start_fastapi():
         host="0.0.0.0",
         port=8000,
         log_level="info",  # debug, info, warning, error, critical
-        # ssl_keyfile="certs/key.pem",
-        # ssl_certfile="certs/cert.pem",
+        ssl_keyfile="certs/key.pem",
+        ssl_certfile="certs/cert.pem",
     )
     server = uvicorn.Server(config)
     await server.serve()  # this is async and will block, so run in a task
