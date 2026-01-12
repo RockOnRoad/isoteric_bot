@@ -3,11 +3,13 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from yookassa import Payment as YKPayment, Webhook
+
+# from yookassa import Payment as YKPayment, Webhook
 
 from core.config import bot
 from db.crud import get_payment_by_payment_id, get_user
 from db.database import AsyncSessionLocal
+from services.topup_routine import TopupRoutine
 
 
 # --- FastAPI app ---
@@ -21,16 +23,26 @@ async def webhook(request: Request):
 
     status = payload.get("object", {}).get("status")
     id = payload.get("object", {}).get("id")
-    user_id = payload.get("object", {}).get("metadata", {}).get("chat_id")
+    chat_id = payload.get("object", {}).get("metadata", {}).get("chat_id")
 
-    # Не блокируем ответ телеграм-запросом, запускаем отправку в фоне
-    # if user_id:
-    #     asyncio.create_task(
-    #         bot.send_message(
-    #             chat_id=user_id,
-    #             text=("Payment received!\n\n" f"Id: {id}\n" f"Status: {status}\n"),
-    #         )
-    #     )
+    if status == "succeeded":
+        async with AsyncSessionLocal() as session:
+
+            payment = await get_payment_by_payment_id(id, session=session)
+            user = await get_user(payment.user_id, session=session)
+            user_id = user.user_id
+
+            topup_routine = TopupRoutine(session=session, user_id=user_id)
+            await topup_routine.process_successful_payment(payment=payment)
+
+        # Не блокируем ответ телеграм-запросом, запускаем отправку в фоне
+        if chat_id:
+            asyncio.create_task(
+                bot.send_message(
+                    chat_id=chat_id,
+                    text=(f"+ {payment.amount} энергии ⚡️"),
+                )
+            )
 
     return JSONResponse({"message": "Webhook received successfully"}, status_code=200)
 
