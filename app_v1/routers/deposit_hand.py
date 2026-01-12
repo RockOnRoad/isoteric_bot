@@ -82,6 +82,7 @@ async def top_up(
         amount_rub=rub_amount,
         customer_email=user.mail,
         chat_id=call.message.chat.id,
+        user_id=user.user_id,
     )
 
     #  Сохраняем данные платежа в state

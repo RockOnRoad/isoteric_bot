@@ -26,6 +26,7 @@ class PaymentService:
         amount_rub: int,
         customer_email: str,
         chat_id: int,
+        user_id: int,
         return_url: str = "https://t.me/MatrikaSoulBot",
     ) -> dict:
         """
@@ -46,7 +47,9 @@ class PaymentService:
             }
         """
 
-        description = f"Пополнение энергии Matrika Soul Bot ({amount_rub}₽ → {kreds}⚡️)"
+        description = (
+            f"Пополнение энергии Matrika Soul Bot {user_id} ({amount_rub}₽ → {kreds}⚡️)"
+        )
 
         payment = Payment.create(
             {
@@ -63,7 +66,7 @@ class PaymentService:
                     "customer": {"email": customer_email},
                     "items": [
                         {
-                            "description": description,
+                            "description": f"Пополнение энергии Matrika Soul Bot ({amount_rub}₽ → {kreds}⚡️)",
                             "quantity": "1",
                             "amount": {"value": amount_rub, "currency": "RUB"},
                             "vat_code": 1,
