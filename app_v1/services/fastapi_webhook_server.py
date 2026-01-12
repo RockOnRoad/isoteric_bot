@@ -24,13 +24,13 @@ async def webhook(request: Request):
     user_id = payload.get("object", {}).get("metadata", {}).get("chat_id")
 
     # Не блокируем ответ телеграм-запросом, запускаем отправку в фоне
-    if user_id:
-        asyncio.create_task(
-            bot.send_message(
-                chat_id=user_id,
-                text=("Payment received!\n\n" f"Id: {id}\n" f"Status: {status}\n"),
-            )
-        )
+    # if user_id:
+    #     asyncio.create_task(
+    #         bot.send_message(
+    #             chat_id=user_id,
+    #             text=("Payment received!\n\n" f"Id: {id}\n" f"Status: {status}\n"),
+    #         )
+    #     )
 
     return JSONResponse({"message": "Webhook received successfully"}, status_code=200)
 
