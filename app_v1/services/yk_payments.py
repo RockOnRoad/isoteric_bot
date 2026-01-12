@@ -61,16 +61,16 @@ class PaymentService:
                 },
                 "receipt": {
                     "customer": {"email": customer_email},
-                    # "items": [
-                    #     {
-                    #         "description": f"Пополнение баланса BananoGen ({rub_amount}₽ → {banana_amount} бананов)",
-                    #         "quantity": "1",
-                    #         "amount": {"value": f"{rub_amount:.2f}", "currency": "RUB"},
-                    #         "vat_code": 1,
-                    #         "payment_mode": "full_payment",
-                    #         "payment_subject": "payment",
-                    #     }
-                    # ],
+                    "items": [
+                        {
+                            "description": description,
+                            "quantity": "1",
+                            "amount": {"value": amount_rub, "currency": "RUB"},
+                            "vat_code": 1,
+                            "payment_mode": "full_payment",
+                            "payment_subject": "payment",
+                        }
+                    ],
                 },
                 "description": description,
                 "metadata": {
@@ -79,37 +79,6 @@ class PaymentService:
             },
             str(uuid.uuid4()),
         )
-
-        # {
-        #     "description": f"{description} {user_id} ({rub_amount}Р → {banana_amount} бананов)",
-        #     "receipt": {
-        #         "customer": {"email": customer_email},
-        #         "items": [
-        #             {
-        #                 "description": f"Пополнение баланса BananoGen ({rub_amount}₽ → {banana_amount} бананов)",
-        #                 "quantity": "1",
-        #                 "amount": {"value": f"{rub_amount:.2f}", "currency": "RUB"},
-        #                 "vat_code": 1,
-        #                 "payment_mode": "full_payment",
-        #                 "payment_subject": "payment",
-        #             }
-        #         ],
-        #     },
-        #     "confirmation": {
-        #         "type": "redirect",
-        #         "return_url": (
-        #             f"https://t.me/{settings.BOT_USERNAME}"
-        #             if settings.BOT_USERNAME
-        #             else "https://t.me/"
-        #         ),
-        #     },
-        #     "metadata": {
-        #         "user_id": str(user_id),
-        #         "banana_amount": str(banana_amount),
-        #         "rub_amount": str(rub_amount),
-        #         "service": "bananogen",
-        #     },
-        # }
 
         # Сохраняем payment_id в экземпляр
         self.payment_id = payment.id
