@@ -37,6 +37,8 @@ docker-compose.yaml
 
 # Tests
 tests/
+tst_webhook.py
 
 # SSL
 ssl/
+certs/
