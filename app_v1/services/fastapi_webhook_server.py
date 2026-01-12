@@ -47,7 +47,7 @@ async def webhook(request: Request):
 
             payment = await get_payment_by_payment_id(id, session=session)
             user = await get_user(payment.user_id, session=session)
-            user_id = user.user_id
+            user_id = user.id
 
             topup_routine = TopupRoutine(session=session, user_id=user_id)
             await topup_routine.process_successful_payment(payment=payment)
