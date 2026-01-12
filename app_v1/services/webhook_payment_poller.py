@@ -46,7 +46,7 @@ class WebhookServer:
             ip_network("77.75.153.0/25"),
             ip_network("172.16.0.0/12"),
         )
-        creds = f"{settings.yk.test_shop_id}:{settings.yk.test_key}"
+        creds = f"{settings.yk.shop_id}:{settings.yk.key}"
         token = base64.b64encode(creds.encode()).decode()
         self.expected_auth_header = f"Basic {token}"
 
