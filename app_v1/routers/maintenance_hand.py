@@ -238,4 +238,4 @@ async def zips(message: Message, state: FSMContext) -> None:
 
 @mnt_rtr.message(Command("webhook"), AdminCheck())
 async def webhook(message: Message, state: FSMContext) -> None:
-    await tst_webhook()
+    await tst_webhook(message)

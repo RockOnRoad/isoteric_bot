@@ -3,8 +3,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
+from yookassa import Payment as YKPayment, Webhook
 
 from core.config import bot
+from db.crud import get_payment_by_payment_id, get_user
 
 
 # --- FastAPI app ---
@@ -14,16 +16,42 @@ app = FastAPI()
 @app.post("/webhook/yookassa")
 async def webhook(request: Request):
     payload = await request.json()
-    print(payload)
-    user_id = (
-        payload.get("event", {}).get("object", {}).get("metadata", {}).get("user_id")
-    )
+    # {
+    #     "id": "e44e8088-bd73-43b1-959a-954f3a7d0c54",
+    #     "event": "payment.succeeded",
+    #     "url": "https://www.example.com/notification_url"
+    # }
+
+    id = payload.get("id")
+    event = payload.get("event")
+    url = payload.get("url")
+
+    # print(payload)
+    # user_id = (
+    #     payload.get("event", {}).get("object", {}).get("metadata", {}).get("user_id")
+    # )
+    # status = payload.get("event", {}).get("object", {}).get("status")
+
     # Add your processing logic here
-    print(f"User ID: {user_id}")
+    print(f": {id}, {event}, {url}")
+
+    payment = await get_payment_by_payment_id(id)
+    user = await get_user(payment.user_id)
+    user_id = user.user_id
 
     # Не блокируем ответ телеграм-запросом, запускаем отправку в фоне
     if user_id:
-        asyncio.create_task(bot.send_message(user_id, "Payment received!"))
+        asyncio.create_task(
+            bot.send_message(
+                chat_id=user_id,
+                text=(
+                    "Payment received!\n\n",
+                    f"Id: {id}\n",
+                    f"Event: {event}\n",
+                    f"Url: {url}\n",
+                ),
+            )
+        )
 
     return JSONResponse({"message": "Webhook received successfully"}, status_code=200)
 
