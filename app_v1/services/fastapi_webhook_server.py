@@ -17,6 +17,7 @@ app = FastAPI()
 @app.post("/webhook/yookassa")
 async def webhook(request: Request):
     payload = await request.json()
+    print(payload)
     # {
     #     "id": "e44e8088-bd73-43b1-959a-954f3a7d0c54",
     #     "event": "payment.succeeded",
