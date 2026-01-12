@@ -80,9 +80,8 @@ async def top_up(
     payment_data = payment_service.create_payment(
         kreds=kreds,
         amount_rub=rub_amount,
+        customer_email=user.mail,
         chat_id=call.message.chat.id,
-        email=user.mail,
-        # email=user.mail,
     )
 
     #  Сохраняем данные платежа в state
