@@ -7,6 +7,7 @@ from yookassa import Payment as YKPayment, Webhook
 
 from core.config import bot
 from db.crud import get_payment_by_payment_id, get_user
+from db.database import AsyncSessionLocal
 
 
 # --- FastAPI app ---
@@ -34,10 +35,13 @@ async def webhook(request: Request):
 
     # Add your processing logic here
     print(f": {id}, {event}, {url}")
+    async with AsyncSessionLocal() as session:
 
-    payment = await get_payment_by_payment_id(id)
-    user = await get_user(payment.user_id)
-    user_id = user.user_id
+        payment = await get_payment_by_payment_id(id, session=session)
+        user = await get_user(payment.user_id, session=session)
+        user_id = user.user_id
+        user = await get_user(payment.user_id)
+        user_id = user.user_id
 
     # Не блокируем ответ телеграм-запросом, запускаем отправку в фоне
     if user_id:
