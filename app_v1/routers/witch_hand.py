@@ -113,6 +113,9 @@ async def stir_the_cauldron(
 
     await animation_while_generating_text.stop(delete_message=True)
 
+    print(photo)
+    print(answer)
+
     try:
         await call.message.answer_photo(
             photo=photo,

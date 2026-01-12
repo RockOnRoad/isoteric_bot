@@ -9,6 +9,7 @@ __all__ = (
     "get_user_balance",
     "decrease_user_balance",
     "increase_user_balance",
+    "change_user_balance",
     "get_user_referrals",
     "add_entry_to_user_sources",
     "create_payment",
@@ -30,6 +31,7 @@ from .users_crud import (
     get_user_balance,
     decrease_user_balance,
     increase_user_balance,
+    change_user_balance,
     get_user_referrals,
 )
 

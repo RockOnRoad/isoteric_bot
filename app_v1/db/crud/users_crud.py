@@ -208,6 +208,34 @@ async def increase_user_balance(
     return new_balance
 
 
+#  --------------- CHANGE USER BALANCE ---------------
+
+
+async def change_user_balance(
+    user_id: int,
+    amount: int,
+    session: AsyncSession,
+    commit: bool = True,
+) -> int | None:
+
+    stmt = (
+        update(User)
+        .where(User.id == user_id)
+        .values(balance=User.balance + amount)
+        .returning(User.balance)
+    )
+
+    result = await session.execute(stmt)
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
+    new_balance = result.scalar_one_or_none()
+    logger.info(f"User {user_id} balance {amount} -> {new_balance}")
+
+    return new_balance
+
+
 #  --------------- GET USER REFERRALS ---------------
 
 

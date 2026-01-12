@@ -42,3 +42,6 @@ tst_webhook.py
 # SSL
 ssl/
 certs/
+
+# internal
+roles.json

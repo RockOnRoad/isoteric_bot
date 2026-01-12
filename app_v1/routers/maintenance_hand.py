@@ -15,6 +15,7 @@ from db.crud import (
     get_user_by_telegram_id,
     decrease_user_balance,
     increase_user_balance,
+    change_user_balance,
 )
 from keyboards import InlineKbd
 from prompts import PROMPT_TEMPLATES
