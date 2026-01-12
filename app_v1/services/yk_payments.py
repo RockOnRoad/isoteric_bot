@@ -22,9 +22,10 @@ class PaymentService:
 
     def create_payment(
         self,
-        amount: int,
+        kreds: int,
+        amount_rub: int,
+        customer_email: str,
         chat_id: int,
-        description: str = "Пополнение баланса Matrika Soul Bot",
         return_url: str = "https://t.me/MatrikaSoulBot",
     ) -> dict:
         """
@@ -44,21 +45,71 @@ class PaymentService:
                 "amount": int
             }
         """
+
+        description = f"Пополнение энергии Matrika Soul Bot ({amount_rub}₽ → {kreds}⚡️)"
+
         payment = Payment.create(
             {
-                "amount": {"value": amount, "currency": "RUB"},
+                "amount": {
+                    "value": amount_rub,
+                    "currency": "RUB",
+                },
+                "capture": True,
                 "confirmation": {
                     "type": "redirect",
                     "return_url": return_url,
                 },
-                "capture": True,
+                "receipt": {
+                    "customer": {"email": customer_email},
+                    # "items": [
+                    #     {
+                    #         "description": f"Пополнение баланса BananoGen ({rub_amount}₽ → {banana_amount} бананов)",
+                    #         "quantity": "1",
+                    #         "amount": {"value": f"{rub_amount:.2f}", "currency": "RUB"},
+                    #         "vat_code": 1,
+                    #         "payment_mode": "full_payment",
+                    #         "payment_subject": "payment",
+                    #     }
+                    # ],
+                },
+                "description": description,
                 "metadata": {
                     "chat_id": chat_id,
                 },
-                "description": description,
             },
             str(uuid.uuid4()),
         )
+
+        # {
+        #     "description": f"{description} {user_id} ({rub_amount}Р → {banana_amount} бананов)",
+        #     "receipt": {
+        #         "customer": {"email": customer_email},
+        #         "items": [
+        #             {
+        #                 "description": f"Пополнение баланса BananoGen ({rub_amount}₽ → {banana_amount} бананов)",
+        #                 "quantity": "1",
+        #                 "amount": {"value": f"{rub_amount:.2f}", "currency": "RUB"},
+        #                 "vat_code": 1,
+        #                 "payment_mode": "full_payment",
+        #                 "payment_subject": "payment",
+        #             }
+        #         ],
+        #     },
+        #     "confirmation": {
+        #         "type": "redirect",
+        #         "return_url": (
+        #             f"https://t.me/{settings.BOT_USERNAME}"
+        #             if settings.BOT_USERNAME
+        #             else "https://t.me/"
+        #         ),
+        #     },
+        #     "metadata": {
+        #         "user_id": str(user_id),
+        #         "banana_amount": str(banana_amount),
+        #         "rub_amount": str(rub_amount),
+        #         "service": "bananogen",
+        #     },
+        # }
 
         # Сохраняем payment_id в экземпляр
         self.payment_id = payment.id
@@ -66,7 +117,7 @@ class PaymentService:
         return {
             "payment_id": payment.id,
             "confirmation_url": payment.confirmation.confirmation_url,
-            "amount": amount,
+            "amount": amount_rub,
         }
 
     def get_status_success(self, payment_id: Optional[str] = None) -> Optional[dict]:

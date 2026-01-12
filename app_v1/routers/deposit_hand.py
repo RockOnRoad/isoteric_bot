@@ -74,11 +74,14 @@ async def top_up(
 
     payment_service = PaymentService()
     rub_amount = callback_data.rub
+    kreds = TARIFFS.get(rub_amount, {}).get("kreds")
 
     #  Создаем платеж в YooKassa
     payment_data = payment_service.create_payment(
-        amount=rub_amount,
+        kreds=kreds,
+        amount_rub=rub_amount,
         chat_id=call.message.chat.id,
+        email=user.mail,
         # email=user.mail,
     )
 
@@ -89,7 +92,6 @@ async def top_up(
     )
 
     # Сохраняем платеж в БД (amount - кредиты, rub_amount - рубли)
-    kreds = TARIFFS.get(rub_amount, {}).get("kreds")
     if kreds is None:
         logger.error(f"Kreds is None for amount {rub_amount}")
         kreds = rub_amount
