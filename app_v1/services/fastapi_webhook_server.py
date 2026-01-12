@@ -18,31 +18,10 @@ app = FastAPI()
 async def webhook(request: Request):
     payload = await request.json()
     print(payload)
-    # {
-    #     "id": "e44e8088-bd73-43b1-959a-954f3a7d0c54",
-    #     "event": "payment.succeeded",
-    #     "url": "https://www.example.com/notification_url"
-    # }
 
-    id = payload.get("id")
-    event = payload.get("event")
-    url = payload.get("url")
-
-    # print(payload)
-    # user_id = (
-    #     payload.get("event", {}).get("object", {}).get("metadata", {}).get("user_id")
-    # )
-    # status = payload.get("event", {}).get("object", {}).get("status")
-
-    # Add your processing logic here
-    print(f": {id}, {event}, {url}")
-    async with AsyncSessionLocal() as session:
-
-        payment = await get_payment_by_payment_id(id, session=session)
-        user = await get_user(payment.user_id, session=session)
-        user_id = user.user_id
-        user = await get_user(payment.user_id)
-        user_id = user.user_id
+    status = payload.get("object", {}).get("status")
+    id = payload.get("object", {}).get("id")
+    user_id = payload.get("object", {}).get("metadata", {}).get("chat_id")
 
     # Не блокируем ответ телеграм-запросом, запускаем отправку в фоне
     if user_id:
@@ -52,8 +31,7 @@ async def webhook(request: Request):
                 text=(
                     "Payment received!\n\n",
                     f"Id: {id}\n",
-                    f"Event: {event}\n",
-                    f"Url: {url}\n",
+                    f"Status: {status}\n",
                 ),
             )
         )
