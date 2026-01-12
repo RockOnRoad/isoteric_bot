@@ -28,11 +28,7 @@ async def webhook(request: Request):
         asyncio.create_task(
             bot.send_message(
                 chat_id=user_id,
-                text=(
-                    "Payment received!\n\n",
-                    f"Id: {id}\n",
-                    f"Status: {status}\n",
-                ),
+                text=("Payment received!\n\n" f"Id: {id}\n" f"Status: {status}\n"),
             )
         )
 
