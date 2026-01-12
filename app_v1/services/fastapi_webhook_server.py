@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 # from yookassa import Payment as YKPayment, Webhook
 
-from core.config import bot
+from core.config import bot, YK_TRUSTED_NETWORKS
 from db.crud import get_payment_by_payment_id, get_user
 from db.database import AsyncSessionLocal
 from services.topup_routine import TopupRoutine
@@ -18,6 +18,23 @@ app = FastAPI()
 
 @app.post("/webhook/yookassa")
 async def webhook(request: Request):
+
+    client_ip = request.client.host
+
+    # Проверка - принадлежит ли IP доверенным сетям
+    import ipaddress
+
+    ip = ipaddress.ip_address(client_ip)
+    allowed = False
+    for net in YK_TRUSTED_NETWORKS:
+        if ip in ipaddress.ip_network(net):
+            allowed = True
+            break
+
+    if not allowed:
+        # либо 403 Forbidden, либо сразу return
+        return JSONResponse({"message": "Forbidden"}, status_code=403)
+
     payload = await request.json()
     print(payload)
 
