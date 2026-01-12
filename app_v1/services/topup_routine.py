@@ -69,6 +69,7 @@ class TopupRoutine:
                 session=self.session,
                 commit=False,
             )
+            await self.session.commit()
 
             #  Начисляем реферальный бонус пригласившему пользователю
             if user.referred_id:

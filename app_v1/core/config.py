@@ -9,8 +9,8 @@ from aiogram.enums import ParseMode
 
 load_dotenv()
 
-
 ENV = sys.argv[1]
+
 COST = {
     "witchcraft": 0,
     "reading": 33,
@@ -31,8 +31,8 @@ YK_TRUSTED_NETWORKS = [
 
 
 class YKPaymentsConfig(BaseModel):
-    test_shop_id: str
-    test_key: str
+    shop_id: str
+    key: str
 
 
 class Settings(BaseSettings):

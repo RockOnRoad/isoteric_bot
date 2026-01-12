@@ -54,9 +54,9 @@ async def main() -> None:
     logger.info("Database initialized.")
 
     # # Initialize payment poller
-    # payment_poller = PaymentPoller()
-    # await payment_poller.start()
-    # logger.info("Payment poller started.")
+    payment_poller = PaymentPoller()
+    await payment_poller.start()
+    logger.info("Payment poller started.")
 
     asyncio.create_task(start_fastapi())
 

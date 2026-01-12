@@ -16,8 +16,8 @@ class PaymentService:
         Args:
             payment_id: Опциональный ID платежа для работы с существующим платежом
         """
-        Configuration.account_id = settings.yk.test_shop_id
-        Configuration.secret_key = settings.yk.test_key
+        Configuration.account_id = settings.yk.shop_id
+        Configuration.secret_key = settings.yk.key
         self.payment_id = payment_id
 
     def create_payment(

@@ -53,53 +53,6 @@ class PaymentPoller:
                                 payment=payment
                             )
 
-                            # # Платеж успешен
-                            # await update_payment_status(
-                            #     payment_id=payment.payment_id,
-                            #     status="completed",
-                            #     session=session,
-                            # )
-
-                            # await increase_user_balance(
-                            #     user_id=payment.user_id,
-                            #     amount=payment.amount,
-                            #     session=session,
-                            # )
-
-                            # user = await get_user(id=payment.user_id, session=session)
-                            # if user.referred_id:
-
-                            #     referrer = await get_user(
-                            #         id=user.referred_id, session=session
-                            #     )
-
-                            #     bonus_amount = ceil(
-                            #         payment.amount * REFERRAL_BONUS_PERCENT
-                            #     )
-
-                            #     #  Создаем запись в бд о начислении бонуса
-                            #     ref_bonus_data = {
-                            #         "ref_id": user.id,
-                            #         "referred_user_id": user.user_id,
-                            #         "referrer_user_id": referrer.user_id,
-                            #         "bonus_type": "deposit",
-                            #         "amount": bonus_amount,
-                            #         "deposit_rub_amount": payment.rub_amount,
-                            #         "deposit_token_amount": payment.amount,
-                            #         "pay_id": payment.id,
-                            #     }
-                            #     await create_referral_bonus(
-                            #         data=ref_bonus_data,
-                            #         session=session,
-                            #     )
-
-                            #     #  Начисляем бонус рефереру
-                            #     await increase_user_balance(
-                            #         user_id=referrer.id,
-                            #         amount=bonus_amount,
-                            #         session=session,
-                            #     )
-
                             logger.info(
                                 f"Payment {payment.payment_id} completed. \n"
                                 f"Balance increased for user {payment.user_id}"
