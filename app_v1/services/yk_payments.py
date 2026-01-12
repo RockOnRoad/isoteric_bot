@@ -66,6 +66,7 @@ class PaymentService:
                     "customer": {"email": customer_email},
                     "items": [
                         {
+                            "description": f"Пополнение энергии Matrika Soul Bot ({amount_rub}₽ → {kreds}⚡️)",
                             "quantity": "1",
                             "amount": {"value": amount_rub, "currency": "RUB"},
                             "vat_code": 1,
