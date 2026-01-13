@@ -1,5 +1,5 @@
 import logging
-
+import json
 
 from aiogram import Router
 from aiogram.filters import Command, Filter
@@ -12,6 +12,7 @@ from db.crud import (
     change_user_balance,
 )
 from core.config import settings
+from services import get_admin_stats
 
 logger = logging.getLogger(__name__)
 rtr = Router()
@@ -21,7 +22,9 @@ class AdminCheck(Filter):
     """Filter to check if the user is an admin (owner) of the bot."""
 
     async def __call__(self, update: Message | CallbackQuery) -> bool:
-        return str(update.from_user.id) in settings.admins
+        with open("app_v1/core/roles.json", "r") as f:
+            roles = json.load(f)
+        return str(update.from_user.id) in roles["admins"]
 
 
 #  ----------- GIVE BALANCE -----------
@@ -53,3 +56,10 @@ async def give_or_take_balance(
     text += f"💰 Стало: <b>{new_balance} ⚡️</b>"
 
     await message.answer(text)
+
+
+#  ----------- ADMIN STATS -----------
+@rtr.message(Command("admin"), AdminCheck())
+async def admin_stats(message: Message, db_session: AsyncSession) -> None:
+    stats = await get_admin_stats(db_session)
+    await message.answer(stats)

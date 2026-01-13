@@ -1,4 +1,5 @@
 __all__ = [
+    "get_admin_stats",
     "calculate_arcana",
     "ARCANA_MAP",
     "GoogleAI",
@@ -12,6 +13,7 @@ __all__ = [
     "start_fastapi",
 ]
 
+from .admin_stats import get_admin_stats
 from .arcana_serv import calculate_arcana, ARCANA_MAP
 from .google_ai import GoogleAI
 from .message_animation import MessageAnimation

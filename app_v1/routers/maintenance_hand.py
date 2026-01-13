@@ -30,8 +30,8 @@ class ArcanaStates(StatesGroup):
     arcana = State()
 
 
-class AdminCheck(Filter):
-    """Filter to check if the user is an admin (owner) of the bot."""
+class OwnerCheck(Filter):
+    """Filter to check if the user is the owner of the bot."""
 
     async def __call__(self, update: Message | CallbackQuery) -> bool:
         return str(update.from_user.id) in settings.admins
@@ -40,7 +40,7 @@ class AdminCheck(Filter):
 #  ----------- ADMIN HELP -----------
 
 
-@mnt_rtr.message(Command("a-help"), AdminCheck())
+@mnt_rtr.message(Command("a-help"), OwnerCheck())
 async def a_help(update: Message | CallbackQuery, state: FSMContext) -> None:
 
     text = (
@@ -107,7 +107,7 @@ async def handle_arcana_message(message: Message, state: FSMContext) -> None:
 #  ----------- CURRENT MODELS -----------
 
 
-@mnt_rtr.message(Command("models_openai"), AdminCheck())
+@mnt_rtr.message(Command("models_openai"), OwnerCheck())
 async def models(update: Message | CallbackQuery, state: FSMContext) -> None:
 
     client = OpenAIClient()
@@ -121,7 +121,7 @@ async def models(update: Message | CallbackQuery, state: FSMContext) -> None:
 #  ----------- MODELS TEMPLATES -----------
 
 
-@mnt_rtr.message(Command("templates"), AdminCheck())
+@mnt_rtr.message(Command("templates"), OwnerCheck())
 async def templates(update: Message | CallbackQuery, state: FSMContext) -> None:
     free_mode_explanation = PROMPT_TEMPLATES["free_mode_explanation"]
     raw = "блабла"
@@ -134,7 +134,7 @@ async def templates(update: Message | CallbackQuery, state: FSMContext) -> None:
 #  ----------- CHATGPT IMAGE -----------
 
 
-@mnt_rtr.message(Command("image"), AdminCheck())
+@mnt_rtr.message(Command("image"), OwnerCheck())
 async def image(update: Message | CallbackQuery, state: FSMContext) -> None:
     client = OpenAIClient()
     image_bytes = await client.chatgpt_image(
@@ -146,7 +146,7 @@ async def image(update: Message | CallbackQuery, state: FSMContext) -> None:
 #  ----------- GOOGLE IMAGE -----------
 
 
-@mnt_rtr.message(Command("models_google"), AdminCheck())
+@mnt_rtr.message(Command("models_google"), OwnerCheck())
 async def google_image(update: Message | CallbackQuery, state: FSMContext) -> None:
     client = GoogleAI()
     models = client.google_models()
@@ -159,7 +159,7 @@ async def google_image(update: Message | CallbackQuery, state: FSMContext) -> No
 #  ----------- TEST MESSAGE DELETION -----------
 
 
-@mnt_rtr.message(Command("delete"), AdminCheck())
+@mnt_rtr.message(Command("delete"), OwnerCheck())
 async def delete(message: Message | CallbackQuery, state: FSMContext) -> None:
 
     buttons = {"Button 1": DeleteFunc(button="button1").pack()}
@@ -192,7 +192,7 @@ async def button1(callback: CallbackQuery, state: FSMContext) -> None:
 #  ----------- DECREASE BALANCE -----------
 
 
-@mnt_rtr.message(Command("withdraw"), AdminCheck())
+@mnt_rtr.message(Command("withdraw"), OwnerCheck())
 async def decrease_balance(
     message: Message, db_session: AsyncSession, state: FSMContext
 ) -> None:
@@ -209,7 +209,7 @@ async def decrease_balance(
 #  ----------- DEPOSIT BALANCE -----------
 
 
-@mnt_rtr.message(Command("deposit"), AdminCheck())
+@mnt_rtr.message(Command("deposit"), OwnerCheck())
 async def deposit_balance(
     message: Message, db_session: AsyncSession, state: FSMContext
 ) -> None:
@@ -225,7 +225,7 @@ async def deposit_balance(
 #  ----------- SPLIT IN PAIRS -----------
 
 
-@mnt_rtr.message(Command("zip"), AdminCheck())
+@mnt_rtr.message(Command("zip"), OwnerCheck())
 async def zips(message: Message, state: FSMContext) -> None:
     text = message.text.split()[1]
     one_by_one = text.split("_")
@@ -237,6 +237,6 @@ async def zips(message: Message, state: FSMContext) -> None:
 #  ----------- TEST WEBHOOK -----------
 
 
-@mnt_rtr.message(Command("webhook"), AdminCheck())
+@mnt_rtr.message(Command("webhook"), OwnerCheck())
 async def webhook(message: Message, state: FSMContext) -> None:
     await tst_webhook(message)

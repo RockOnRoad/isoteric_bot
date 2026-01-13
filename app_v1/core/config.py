@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     google_api_key: str
     database_url: str
-    admins: set[str]
+    owners: set[str]
 
     naming_convention: dict[str, str] = {
         "ix": "ix_%(column_0_label)s",

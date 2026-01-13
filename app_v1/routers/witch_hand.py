@@ -62,6 +62,7 @@ async def stir_the_cauldron(
         "name": fsm_data["name"],
         "sex": fsm_data["sex"],
         "birthday": fsm_data["birthday"],
+        "segment": "qual",
     }
     await state.clear()
 
@@ -83,10 +84,6 @@ async def stir_the_cauldron(
 
     await animation_while_generating_image.stop(delete_message=True)
 
-    # await asyncio.sleep(0.2)
-    # msg_generating_text = await call.message.answer(
-    #     f"🔢 Рассчитываю центральный аркан ..."
-    # )
     animation_while_generating_text = MessageAnimation(
         message_or_call=call,
         base_text="🔢 Рассчитываю центральный аркан",
@@ -98,8 +95,6 @@ async def stir_the_cauldron(
     answer, conversation_id = await client.chatgpt_response(
         feature="first", context=data, max_length=1020
     )
-    # answer = f"{data['name']}, я получила твой центральный код"
-    # await asyncio.sleep(5)
 
     readings_main_buttons = {
         "💸 Деньги": ReadingsDomain(button="wealth").pack(),
@@ -112,9 +107,6 @@ async def stir_the_cauldron(
     kbd = InlineKbd(buttons=readings_main_buttons, width=2)
 
     await animation_while_generating_text.stop(delete_message=True)
-
-    print(photo)
-    print(answer)
 
     try:
         await call.message.answer_photo(
