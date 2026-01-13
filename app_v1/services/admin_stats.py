@@ -25,15 +25,19 @@ async def get_admin_stats(db_session: AsyncSession) -> dict:
     total_generations = await db_session.scalar(
         select(func.count(GenerationHistory.id))
     )
-    total_payments = await db_session.scalar(select(func.count(Payment.id)))
+    total_payments = await db_session.scalar(
+        select(func.count(Payment.id)).where(Payment.status == "completed")
+    )
     payments_today = await db_session.scalar(
         select(func.count(Payment.id)).where(
-            func.date(Payment.created_at) == func.current_date()
+            func.date(Payment.created_at) == func.current_date(),
+            Payment.status == "completed",
         )
     )
     payments_yesterday = await db_session.scalar(
         select(func.count(Payment.id)).where(
-            func.date(Payment.created_at) == func.current_date() - 1
+            func.date(Payment.created_at) == func.current_date() - 1,
+            Payment.status == "completed",
         )
     )
 
@@ -56,7 +60,7 @@ async def get_admin_stats(db_session: AsyncSession) -> dict:
     banned_percentage = (banned / total_users) * 100
 
     text = f"""
-📊 <b>✨ MatrikaSoulBot ✨</b> статистика
+<b>✨ MatrikaSoulBot ✨</b> статистика
 
 👥 Всего пользователей: {total_users}
 🔥 Активных сегодня: {active_users}
