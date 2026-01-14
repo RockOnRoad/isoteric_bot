@@ -10,6 +10,7 @@ from core.config import bot, YK_TRUSTED_NETWORKS
 from db.crud import get_payment_by_payment_id, get_user
 from db.database import AsyncSessionLocal
 from services.topup_routine import TopupRoutine
+from db.models.payment import Payment
 
 
 # --- FastAPI app ---
@@ -45,15 +46,16 @@ async def webhook(request: Request):
     if status == "succeeded":
         async with AsyncSessionLocal() as session:
 
-            payment = await get_payment_by_payment_id(id, session=session)
-            user = await get_user(payment.user_id, session=session)
-            user_id = user.id
+            payment: Payment = await get_payment_by_payment_id(id, session=session)
+            if payment and payment.status == "pending":
 
-            topup_routine = TopupRoutine(session=session, user_id=user_id)
-            await topup_routine.process_successful_payment(payment=payment)
+                user = await get_user(payment.user_id, session=session)
+
+                topup_routine = TopupRoutine(session=session, user_id=user.id)
+                await topup_routine.process_successful_payment(payment=payment)
 
         # Не блокируем ответ телеграм-запросом, запускаем отправку в фоне
-        if chat_id:
+        if chat_id and payment and payment.status == "completed":
             asyncio.create_task(
                 bot.send_message(
                     chat_id=chat_id,

@@ -1,6 +1,7 @@
 import logging
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from dns import message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,7 +43,7 @@ async def lk_handler(update: Message | CallbackQuery, db_session: AsyncSession) 
         "💰 Пополнить": LkButton(button="top_up").pack(),
         "👥 Пригласи друга": LkButton(button="invite_friend").pack(),
         "🤹‍♀️ Наши боты": LkButton(button="our_bots").pack(),
-        # "❓ Помощь": LkButton(button="help").pack(),
+        "❓ Помощь": LkButton(button="help").pack(),
     }
     kbd = InlineKbd(buttons=buttons, width=2)
 
@@ -64,6 +65,7 @@ async def lk_handler(update: Message | CallbackQuery, db_session: AsyncSession) 
 
 lk_rtr.message.register(lk_handler, F.text == "👤 Личный кабинет")
 lk_rtr.callback_query.register(lk_handler, LkButton.filter(F.button == "back"))
+lk_rtr.message.register(lk_handler, Command("balance"))
 
 
 #  ----------- TOP UP -----------
@@ -190,21 +192,20 @@ async def our_bots(callback: CallbackQuery) -> None:
 @lk_rtr.callback_query(LkButton.filter(F.button == "help"))
 async def help(callback: CallbackQuery) -> None:
     msg = (
-        "<b>🆘 Нужна помощь?</b>\n"
-        "Никакой паники, сейчас всё решим 💪\n\n"
-        "<b>👨‍💻 Администратор:</b>\n"
-        "@b_chernenko — всегда на связи.\n\n"
-        "<b>✍️ Пишите, если:</b>\n"
-        "— что-то пошло не так 🛠\n"
-        "— не прошла оплата 💸\n"
-        "— нужна подсказка или совет 😎\n\n"
-        "<b>📎 Полезное:</b>\n"
-        "📄 Пользовательское соглашение\n"
-        "📄 Согласие на обработку персональных данных\n\n"
-        "<b>⌨ Команды бота:</b>\n"
-        "/start — начать\n"
-        "/balance — баланс\n"
-        "/payment — пополнить"
+        "<b>✨ Пространство поддержки и заботы</b>\n"
+        "Если твой путь в Матрице встретил преграду или возникли вопросы — не беспокойся. Мы здесь, чтобы восстановить баланс и помочь тебе двигаться дальше. 🙏\n\n"
+        "🤝 Твой проводник:\n"
+        "@MatrikaSoulSupBot — бережно поможет решить любой вопрос.\n\n"
+        "<b>🌿 Напиши, если:</b>\n"
+        "• <b>Сбились настройки:</b> возникла техническая заминка или ошибка 🛠\n"
+        "• <b>Энергия в пути:</b> оплата не зачислилась на баланс 💎\n"
+        "• <b>Нужен совет:</b> возникли трудности с навигацией по боту или поиском смыслов ✨\n\n"
+        "<b>📄 Важные документы:</b>\n"
+        "• [Пользовательское соглашение]\n"
+        "• [Согласие на обработку данных]\n\n"
+        "<b>⌨ Команды для управления:</b>\n"
+        "• /start — вернуться в начало пути\n"
+        "• /balance — проверить запас энергии"
     )
 
     buttons = {
@@ -212,3 +213,6 @@ async def help(callback: CallbackQuery) -> None:
     }
     kbd = InlineKbd(buttons=buttons, width=2)
     await callback.message.edit_text(msg, reply_markup=kbd.markup)
+
+
+# https://t.me/MatrikaSoulSupBot
