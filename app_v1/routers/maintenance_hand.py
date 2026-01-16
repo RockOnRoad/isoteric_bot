@@ -21,6 +21,7 @@ from keyboards import InlineKbd
 from prompts import PROMPT_TEMPLATES
 from services import calculate_arcana, GoogleAI, OpenAIClient, tst_webhook
 from schemas import CalculateArcana, DeleteFunc
+from core.config import bot
 
 logger = logging.getLogger(__name__)
 mnt_rtr = Router()
@@ -34,7 +35,7 @@ class OwnerCheck(Filter):
     """Filter to check if the user is the owner of the bot."""
 
     async def __call__(self, update: Message | CallbackQuery) -> bool:
-        return str(update.from_user.id) in settings.admins
+        return str(update.from_user.id) in settings.owners
 
 
 #  ----------- ADMIN HELP -----------
@@ -240,3 +241,14 @@ async def zips(message: Message, state: FSMContext) -> None:
 @mnt_rtr.message(Command("webhook"), OwnerCheck())
 async def webhook(message: Message, state: FSMContext) -> None:
     await tst_webhook(message)
+
+
+#  ----------- GET A LIST OF CHANNEL SUBS -----------
+
+
+@mnt_rtr.message(Command("cn_subs"), OwnerCheck())
+async def cn_subs(message: Message, state: FSMContext) -> None:
+    member = await bot.get_chat_member(
+        chat_id="@neiro_office", user_id=message.from_user.id  # or channel_id
+    )
+    await message.answer(f"Member: {member}")
