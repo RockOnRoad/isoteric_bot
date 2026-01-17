@@ -11,7 +11,7 @@ from db.crud import get_user_by_telegram_id, update_user_info, decrease_user_bal
 from services import GoogleAI, OpenAIClient
 from keyboards import InlineKbd
 from schemas import LkButton
-from services import calculate_arcana, ARCANA_MAP
+from services import MessageAnimation
 
 
 logger = logging.getLogger(__name__)
@@ -69,6 +69,13 @@ async def handle_daily_card_main(
             "current_date": date.today(),
         }
 
+        # Анимация сообщения во время генерации ответа
+        animation_while_generating_response = MessageAnimation(
+            message_or_call=update,
+            base_text="✨ Настраиваюсь на поток",
+        )
+        animation_while_generating_response.start()
+
         #  Получаем текст
         client = OpenAIClient(auto_create_conv=True)
         answer, conversation_id = await client.chatgpt_response(
@@ -88,6 +95,8 @@ async def handle_daily_card_main(
         # picture = FSInputFile(
         #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
         # )
+
+        await animation_while_generating_response.stop(delete_message=True)
 
         if isinstance(update, CallbackQuery):
             await update.message.edit_text("Вы еще не получили карту дня")

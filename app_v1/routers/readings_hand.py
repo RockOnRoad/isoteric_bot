@@ -10,7 +10,7 @@ from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import COST
-from services import OpenAIClient
+from services import OpenAIClient, MessageAnimation
 from schemas import ReadingsDomain, ReadingsSub, ReadingsStates, BalanceCheck, LkButton
 from keyboards import InlineKbd
 from db.crud import (
@@ -186,11 +186,20 @@ async def handle_response(
         context["domain"] = callback_data.domain
         context["aspect"] = callback_data.aspect
 
+        # Анимация сообщения во время генерации ответа
+        animation_while_generating_answer = MessageAnimation(
+            message_or_call=call,
+            base_text="✨ Настраиваюсь на поток",
+        )
+        animation_while_generating_answer.start()
+
         #  Getting response from OpenAI
         client = OpenAIClient(auto_create_conv=False)
         answer, conversation_id = await client.chatgpt_response(
             feature="readings", context=context
         )
+
+        await animation_while_generating_answer.stop(delete_message=True)
 
         #  saving conversation to database
         await update_user_info(

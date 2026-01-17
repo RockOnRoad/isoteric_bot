@@ -18,7 +18,7 @@ from schemas import (
     BalanceCheck,
     LkButton,
 )
-from services import GoogleAI
+from services import GoogleAI, MessageAnimation
 
 logger = logging.getLogger(__name__)
 ai_portraits_rtr = Router()
@@ -214,6 +214,14 @@ async def handle_generate_portrait(
     context = await state.get_data()
 
     if context:
+
+        # Анимация сообщения во время генерации ответа
+        animation_while_generating_picture = MessageAnimation(
+            message_or_call=call,
+            base_text="✨ Настраиваюсь на поток",
+        )
+        animation_while_generating_picture.start()
+
         #  Получаем изображение
         client = GoogleAI()
         picture: BufferedInputFile | None = await client.generate_picture(
@@ -225,6 +233,8 @@ async def handle_generate_portrait(
         # picture = FSInputFile(
         #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
         # )
+
+        await animation_while_generating_picture.stop(delete_message=True)
 
         await call.message.delete()
         await asyncio.sleep(0.2)
