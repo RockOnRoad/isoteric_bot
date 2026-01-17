@@ -31,8 +31,8 @@ class User(Base):
     balance: Mapped[int] = mapped_column(default=0)
     #  Сегмент в котором находится пользователь в зависимости от того пополнял ли он баланс
     #  и насколько активно он использует бота
-    segment: Mapped[Segment] = mapped_column(
-        Enum("lead", "qual", "client", "banned", name="segment_enum"), default="lead"
+    segment: Mapped[Segment | None] = mapped_column(
+        Enum("lead", "qual", "client", "banned", name="segment_enum")
     )
     #  ID пользователя, который пригласил этого пользователя
     referred_id: Mapped[int | None] = mapped_column(

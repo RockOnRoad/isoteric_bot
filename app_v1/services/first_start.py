@@ -39,26 +39,35 @@ async def first_start_routine(
     # Сначала вытаскиваем реферера и остальные параметры из payload
     if command.args:
         source_parts = command.args.split("_")
+        referrer = ""
         for key, value in zip(source_parts[::2], source_parts[1::2]):
             if key == "ref":
-                try:
-                    referrer = int(value)
-                except (TypeError, ValueError):
-                    logger.warning("Invalid ref: %s", value)
+                #  Если реферер уже был найден, то пропускаем
+                if referrer:
                     continue
-                last_added_user_id = await get_last_added_user_id(db_session)
-                #  Если это самый первый пользователь
-                if last_added_user_id:
-                    current_user = last_added_user_id + 1
+                #  Если это первая пара с ключом "ref", сохраняем реферера
                 else:
-                    current_user = 1
-                if referrer != current_user:
-                    user_by_ref = await get_user(referrer, db_session)
-                    if not user_by_ref:
-                        logger.info("Referrer %s not found", referrer)
+                    try:
+                        referrer = int(value)
+                    except (TypeError, ValueError):
+                        logger.warning("Invalid ref: %s", value)
                         continue
-                    referrer_id = referrer
-                continue
+                    #  Проверяем, что пользователь не ввёл сам себя в качестве реферера
+                    last_added_user_id = await get_last_added_user_id(db_session)
+                    if last_added_user_id:
+                        current_user = last_added_user_id + 1
+                    #  Если это самый первый пользователь
+                    else:
+                        current_user = 1
+                    if referrer != current_user:
+                        #  Проверяем, что реферер существует
+                        user_by_ref = await get_user(referrer, db_session)
+                        if not user_by_ref:
+                            logger.info("Referrer %s not found", referrer)
+                            continue
+                        #  Сохраняем реферера
+                        referrer_id = referrer
+                    continue
 
             sources.append((str(key), str(value)))
 

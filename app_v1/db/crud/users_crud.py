@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError, IntegrityError
 
-from db.models.user import User
+from db.models import User, Segment
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,16 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, DateTime, func, MetaData
+from sqlalchemy import DateTime, func, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
-from core.config import settings
+
+naming_convention: dict[str, str] = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
 
 
 class Base(DeclarativeBase):
@@ -11,7 +18,7 @@ class Base(DeclarativeBase):
 
     __abstract__ = True
 
-    metadata = MetaData(naming_convention=settings.naming_convention)
+    metadata = MetaData(naming_convention=naming_convention)
 
     #  Присваевает __tablename__ с окончанием 's' всем дочерним моделям
     @declared_attr.directive

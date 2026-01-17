@@ -1,4 +1,5 @@
-import sys
+# import sys
+import os
 from dotenv import load_dotenv
 from pydantic import Field, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,7 +10,8 @@ from aiogram.enums import ParseMode
 
 load_dotenv()
 
-ENV = sys.argv[1]
+# ENV = sys.argv[1]
+ENV = os.getenv("ENV", "dev")
 
 COST = {
     "witchcraft": 0,
@@ -29,6 +31,8 @@ YK_TRUSTED_NETWORKS = [
     "2a02:5180::/32",
 ]
 
+RELATED_CHANNELS = ["@neiro_office", "@nion_neiro"]
+
 
 class YKPaymentsConfig(BaseModel):
     shop_id: str
@@ -46,14 +50,6 @@ class Settings(BaseSettings):
     google_api_key: str
     database_url: str
     owners: set[str]
-
-    naming_convention: dict[str, str] = {
-        "ix": "ix_%(column_0_label)s",
-        "uq": "uq_%(table_name)s_%(column_0_name)s",
-        "ck": "ck_%(table_name)s_%(constraint_name)s",
-        "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-        "pk": "pk_%(table_name)s",
-    }
 
     rubles_per_credit: int = 10
     yk: YKPaymentsConfig

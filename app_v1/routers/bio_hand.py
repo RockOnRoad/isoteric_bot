@@ -4,12 +4,12 @@ from datetime import datetime, timedelta
 
 import logging
 from aiogram import Router, F
-from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.filters import CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import get_user_by_telegram_id
+from db.crud import get_user_by_telegram_id, update_user_info, increase_user_balance
 from db.models import User
 from services.first_start import first_start_routine
 from keyboards import InlineKbd
@@ -100,8 +100,14 @@ async def handle_start_command(
                 msg = "Похоже реферальная ссылка некорректна. Попробуй ещё раз."
 
         await message.answer(msg, reply_markup=ReplyKeyboardRemove())
-
         await state.set_state(BioStates.name)
+    if user.segment is None:
+        await update_user_info(
+            user_id=message.from_user.id, data={"segment": "lead"}, session=db_session
+        )
+        await increase_user_balance(
+            user_id=message.from_user.id, amount=33, session=db_session
+        )
 
 
 #  ----------- NAME ----------- ШАГ 1

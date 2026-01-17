@@ -251,4 +251,4 @@ async def cn_subs(message: Message, state: FSMContext) -> None:
     member = await bot.get_chat_member(
         chat_id="@neiro_office", user_id=message.from_user.id  # or channel_id
     )
-    await message.answer(f"Member: {member}")
+    await message.answer(f"Member status: {member.status}")
