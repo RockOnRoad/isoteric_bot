@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 rtr = Router()
 
 
-channels = [[000, 111, 238163604, 222], [238163604, 333, 444, 555]]
+channels = [[238163604, 000, 111, 222], [333, 444, 555]]
 
 
 class NotASub(Filter):
