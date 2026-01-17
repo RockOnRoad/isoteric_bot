@@ -9,11 +9,16 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud import get_user_by_telegram_id, update_user_info, increase_user_balance
+from db.crud import (
+    get_user_by_telegram_id,
+    increase_user_balance,
+    add_user_bonus,
+    get_user_bonus_by_name,
+)
 from db.models import User
 from services.first_start import first_start_routine
 from keyboards import InlineKbd
-from schemas import BioStates, BioEdit, BioCorrect, BioSex, main_reply_kbd
+from schemas import BioStates, BioEdit, BioCorrect, BioSex, main_reply_kbd, BONUSES
 
 
 logger = logging.getLogger(__name__)
@@ -101,12 +106,25 @@ async def handle_start_command(
 
         await message.answer(msg, reply_markup=ReplyKeyboardRemove())
         await state.set_state(BioStates.name)
-    if user.segment is None:
-        await update_user_info(
-            user_id=message.from_user.id, data={"segment": "lead"}, session=db_session
+
+    sub_2_bonus = await get_user_bonus_by_name(
+        user_id=user.id,
+        bonus_name="sub_2",
+        session=db_session,
+    )
+    if sub_2_bonus is None:
+        user = await get_user_by_telegram_id(message.from_user.id, db_session)
+        await add_user_bonus(
+            user_id=user.id,
+            bonus_name="sub_2",
+            amount=BONUSES["sub_2"]["amount"],
+            deposited=True,
+            session=db_session,
         )
         await increase_user_balance(
-            user_id=message.from_user.id, amount=33, session=db_session
+            user_id=user.id,
+            amount=BONUSES["sub_2"]["amount"],
+            session=db_session,
         )
 
 

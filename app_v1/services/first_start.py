@@ -81,7 +81,9 @@ async def first_start_routine(
             session=db_session,
         )
     except IntegrityError:
-        return None
+        logger.error(
+            f"{message.from_user.id} @{message.from_user.username} - 'IntegrityError on upsert_user'"
+        )
 
     # Добавляем источники (коммитим один раз в конце, если есть что писать)
     if sources:

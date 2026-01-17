@@ -6,6 +6,7 @@ __all__ = (
     "BioCorrect",
     "BioSex",
     "BioStates",
+    "BONUSES",
     "DailyCardStates",
     "EmailStates",
     "LkButton",
@@ -25,6 +26,7 @@ __all__ = (
 
 from .ai_portrait_sch import AiPortrait, AiPortraitGenerate, AiPortraitStates
 from .bio_sch import BioEdit, BioCorrect, BioSex, BioStates
+from .bonuses_sch import BONUSES
 from .daily_card_sch import DailyCardStates
 from .email_sch import EmailStates
 from .lk_sch import LkButton, LkTopUp, ReferalLink, TARIFFS, REFERRAL_BONUS_PERCENT

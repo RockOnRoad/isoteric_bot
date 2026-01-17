@@ -68,6 +68,7 @@ async def upsert_user(
             first_name=first_name,
             last_name=last_name,
             referred_id=referred_id,
+            segment="lead",
             # ... any other fields you want to insert
         )
         .on_conflict_do_update(
