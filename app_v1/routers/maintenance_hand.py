@@ -11,7 +11,7 @@ from aiogram.fsm.state import State, StatesGroup
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.config import settings, bot
+from core.config import settings, bot, RELATED_CHANNELS
 from db.database import engine
 from db.crud import (
     get_user_by_telegram_id,
@@ -253,21 +253,17 @@ async def cn_subs(
 
     user_id = message.text.split()[1]
 
-    # member = await bot.get_chat_member(
-    #     chat_id="@neiro_office", user_id=user.id  # or channel_id
-    # )
-    member = await bot.get_chat_member(
-        chat_id="-1002924757750", user_id=user_id  # or channel_id
-    )
-    print(f"Member: {member}")
-    print(f"Member is member: {member.is_member}")
-
-    member2 = await bot.get_chat_member(
-        chat_id="@nion_neiro", user_id=user_id  # or channel_id
-    )
-    print(f"Member2: {member2}")
-    print(f"Member2 is member: {member2.is_member}")
-    await message.answer(f"Member status: {member.status}")
+    sub_statuses = ("member", "administrator", "creator", "restricted", "kicked")
+    not_subbed = True
+    for channel in RELATED_CHANNELS:
+        member = await bot.get_chat_member(
+            chat_id=channel, user_id=user_id  # or channel_id
+        )
+        print(f"Member: {member}")
+        print(f"Member status: {member.status}")
+        if member.status in sub_statuses:
+            not_subbed = False
+    await message.answer(f"Not subbed: {not_subbed}")
 
 
 #  ----------- TABLE NAMES -----------
