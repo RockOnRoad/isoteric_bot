@@ -251,9 +251,11 @@ async def cn_subs(message: Message, state: FSMContext) -> None:
     member = await bot.get_chat_member(
         chat_id="@neiro_office", user_id=message.from_user.id  # or channel_id
     )
+    print(member)
     member2 = await bot.get_chat_member(
         chat_id="@nion_neiro", user_id=message.from_user.id  # or channel_id
     )
+    print(member2)
     await message.answer(f"Member status: {member.status}\n{member2.status}")
 
 
@@ -268,3 +270,6 @@ async def table_names(message: Message, state: FSMContext) -> None:
         )
 
     await message.answer(f"Tables: {tables}")
+
+
+#  ----------- GET ALL ENTRIES -----------
