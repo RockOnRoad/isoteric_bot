@@ -8,20 +8,20 @@ from aiogram.filters import Command, Filter
 from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.config import settings
+from core.config import settings, bot
+from db.database import engine
 from db.crud import (
     get_user_by_telegram_id,
     decrease_user_balance,
     increase_user_balance,
-    change_user_balance,
 )
 from keyboards import InlineKbd
 from prompts import PROMPT_TEMPLATES
 from services import calculate_arcana, GoogleAI, OpenAIClient, tst_webhook
 from schemas import CalculateArcana, DeleteFunc
-from core.config import bot
 
 logger = logging.getLogger(__name__)
 mnt_rtr = Router()
@@ -255,3 +255,16 @@ async def cn_subs(message: Message, state: FSMContext) -> None:
         chat_id="@nion_neiro", user_id=message.from_user.id  # or channel_id
     )
     await message.answer(f"Member status: {member.status}\n{member2.status}")
+
+
+#  ----------- TABLE NAMES -----------
+
+
+@mnt_rtr.message(Command("table_names"), OwnerCheck())
+async def table_names(message: Message, state: FSMContext) -> None:
+    async with engine.begin() as conn:
+        tables = await conn.run_sync(
+            lambda sync_conn: inspect(sync_conn).get_table_names()
+        )
+
+    await message.answer(f"Tables: {tables}")
