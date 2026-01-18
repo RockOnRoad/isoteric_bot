@@ -247,15 +247,24 @@ async def webhook(message: Message, state: FSMContext) -> None:
 
 
 @mnt_rtr.message(Command("cn_subs"), OwnerCheck())
-async def cn_subs(message: Message, state: FSMContext) -> None:
+async def cn_subs(
+    message: Message, db_session: AsyncSession, state: FSMContext
+) -> None:
+
+    user_id = message.text.split()[1]
+    user = await get_user_by_telegram_id(int(user_id), db_session)
+
     member = await bot.get_chat_member(
-        chat_id="@neiro_office", user_id=message.from_user.id  # or channel_id
+        chat_id="@neiro_office", user_id=user.id  # or channel_id
     )
-    print(member)
+    print(f"Member: {member}")
+    print(f"Member is member: {member.is_member}")
+
     member2 = await bot.get_chat_member(
-        chat_id="@nion_neiro", user_id=message.from_user.id  # or channel_id
+        chat_id="@nion_neiro", user_id=user.id  # or channel_id
     )
-    print(member2)
+    print(f"Member2: {member2}")
+    print(f"Member2 is member: {member2.is_member}")
     await message.answer(f"Member status: {member.status}\n{member2.status}")
 
 
