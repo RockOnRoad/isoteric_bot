@@ -4,6 +4,7 @@ from re import M
 
 import asyncio
 from aiogram import Router, F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, Filter
 from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.fsm.context import FSMContext
@@ -254,16 +255,21 @@ async def cn_subs(
     user_id = message.text.split()[1]
 
     sub_statuses = ("member", "administrator", "creator", "restricted", "kicked")
-    not_subbed = True
+    subbed = True
     for channel in RELATED_CHANNELS:
-        member = await bot.get_chat_member(
-            chat_id=channel, user_id=user_id  # or channel_id
-        )
+        try:
+            member = await bot.get_chat_member(
+                chat_id=channel, user_id=user_id  # or channel_id
+            )
+        except TelegramBadRequest:
+            subbed = False
+            break
         print(f"Member: {member}")
         print(f"Member status: {member.status}")
-        if member.status in sub_statuses:
-            not_subbed = False
-    await message.answer(f"Not subbed: {not_subbed}")
+        if member.status not in sub_statuses:
+            subbed = False
+            break
+    await message.answer(f"Subscribed: {subbed}")
 
 
 #  ----------- TABLE NAMES -----------
