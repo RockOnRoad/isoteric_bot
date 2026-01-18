@@ -38,22 +38,24 @@ class NotASub(Filter):
         if sub_2_bonus:
             return False
         else:
-            is_not_subbed = False
-            # for channel in channels:
-            #     if update.from_user.id not in channel:
-            #         is_not_subbed = True
-            #         break
+
+            sub_statuses = (
+                "member",
+                "administrator",
+                "creator",
+                "restricted",
+                "kicked",
+            )
             for channel in RELATED_CHANNELS:
                 try:
                     member = await bot.get_chat_member(
-                        chat_id=channel, user_id=update.from_user.id
+                        chat_id=channel, user_id=update.from_user.id  # or channel_id
                     )
-                    if member.status != "member":
-                        is_not_subbed = True
-                        break
                 except TelegramBadRequest:
-                    return False
-            return is_not_subbed
+                    return True
+                if member.status not in sub_statuses:
+                    return True
+            return False
 
 
 @rtr.message(CommandStart(), NotASub())
