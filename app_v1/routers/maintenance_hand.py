@@ -254,18 +254,21 @@ async def cn_subs(
     user_id = message.text.split()[1]
     user = await get_user_by_telegram_id(int(user_id), db_session)
 
+    # member = await bot.get_chat_member(
+    #     chat_id="@neiro_office", user_id=user.id  # or channel_id
+    # )
     member = await bot.get_chat_member(
-        chat_id="@neiro_office", user_id=user.id  # or channel_id
+        chat_id="-1002924757750", user_id=user.id  # or channel_id
     )
     print(f"Member: {member}")
     print(f"Member is member: {member.is_member}")
 
-    member2 = await bot.get_chat_member(
-        chat_id="@nion_neiro", user_id=user.id  # or channel_id
-    )
-    print(f"Member2: {member2}")
-    print(f"Member2 is member: {member2.is_member}")
-    await message.answer(f"Member status: {member.status}\n{member2.status}")
+    # member2 = await bot.get_chat_member(
+    #     chat_id="@nion_neiro", user_id=user.id  # or channel_id
+    # )
+    # print(f"Member2: {member2}")
+    # print(f"Member2 is member: {member2.is_member}")
+    await message.answer(f"Member status: {member.status}")
 
 
 #  ----------- TABLE NAMES -----------
