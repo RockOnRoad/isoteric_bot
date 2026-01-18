@@ -24,8 +24,6 @@ dc_rtr = Router()
 async def handle_daily_card_main(
     update: Message | CallbackQuery, state: FSMContext, db_session: AsyncSession
 ) -> None:
-    logger.info(f"{update.from_user.id} @{update.from_user.username} - 'daily_card'")
-
     await state.clear()
 
     user = await get_user_by_telegram_id(update.from_user.id, db_session)
@@ -52,7 +50,9 @@ async def handle_daily_card_main(
         elif isinstance(update, Message):
             await update.answer(text, reply_markup=kbd.markup)
 
-        return
+        logger.info(
+            f"{update.from_user.id} @{update.from_user.username} - 'no daily card for poor (ub:{user.balance} cost:{cost})'"
+        )
 
     if latest_daily_card is None or latest_daily_card != date.today():
 
@@ -104,6 +104,10 @@ async def handle_daily_card_main(
             await update.answer_photo(photo=picture, caption=answer)
 
         await decrease_user_balance(user.id, COST["daily_card"], db_session)
+
+        logger.info(
+            f"{update.from_user.id} @{update.from_user.username} - 'daily card generation'"
+        )
     else:
 
         text = (
@@ -118,9 +122,10 @@ async def handle_daily_card_main(
             await update.message.edit_text("Вы уже получили карту дня")
         elif isinstance(update, Message):
             await update.answer(text)
-        return
 
-    # await state.set_state(DailyCardStates.main)
+        logger.info(
+            f"{update.from_user.id} @{update.from_user.username} - 'daily card already generated today'"
+        )
 
 
 dc_rtr.message.register(handle_daily_card_main, F.text == "🃏 Карта Дня")
