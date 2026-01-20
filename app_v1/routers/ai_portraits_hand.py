@@ -220,7 +220,7 @@ async def handle_generate_portrait(
             message_or_call=call,
             base_text="✨ Настраиваюсь на поток",
         )
-        animation_while_generating_picture.start()
+        await animation_while_generating_picture.start()
 
         #  Получаем изображение
         client = GoogleAI()
@@ -234,7 +234,7 @@ async def handle_generate_portrait(
         #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
         # )
 
-        await animation_while_generating_picture.stop(delete_message=True)
+        await animation_while_generating_picture.stop()
 
         await call.message.delete()
         await asyncio.sleep(0.2)

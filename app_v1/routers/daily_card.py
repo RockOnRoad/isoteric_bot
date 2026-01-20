@@ -74,7 +74,7 @@ async def handle_daily_card_main(
             message_or_call=update,
             base_text="✨ Настраиваюсь на поток",
         )
-        animation_while_generating_response.start()
+        await animation_while_generating_response.start()
 
         #  Получаем текст
         client = OpenAIClient(auto_create_conv=True)
@@ -96,7 +96,7 @@ async def handle_daily_card_main(
         #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
         # )
 
-        await animation_while_generating_response.stop(delete_message=True)
+        await animation_while_generating_response.stop()
 
         if isinstance(update, CallbackQuery):
             await update.message.edit_text("Вы еще не получили карту дня")

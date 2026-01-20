@@ -46,7 +46,7 @@ async def stir_the_cauldron(
         message_or_call=call,
         base_text="🌀 Соединяюсь с полем твоей Матрицы",
     )
-    animation_while_generating_image.start()
+    await animation_while_generating_image.start()
 
     # #  Обновляем данные пользователя в базе данных
     # user_id = call.from_user.id
@@ -82,13 +82,13 @@ async def stir_the_cauldron(
     # )
     # await asyncio.sleep(5)
 
-    await animation_while_generating_image.stop(delete_message=True)
+    await animation_while_generating_image.stop()
 
     animation_while_generating_text = MessageAnimation(
         message_or_call=call,
         base_text="🔢 Рассчитываю центральный аркан",
     )
-    animation_while_generating_text.start()
+    await animation_while_generating_text.start()
 
     # getting message
     client = OpenAIClient(auto_create_conv=False)
@@ -106,7 +106,7 @@ async def stir_the_cauldron(
     }
     kbd = InlineKbd(buttons=readings_main_buttons, width=2)
 
-    await animation_while_generating_text.stop(delete_message=True)
+    await animation_while_generating_text.stop()
 
     try:
         await call.message.answer_photo(

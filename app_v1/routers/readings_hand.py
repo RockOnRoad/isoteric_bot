@@ -191,7 +191,7 @@ async def handle_response(
             message_or_call=call,
             base_text="✨ Настраиваюсь на поток",
         )
-        animation_while_generating_answer.start()
+        await animation_while_generating_answer.start()
 
         #  Getting response from OpenAI
         client = OpenAIClient(auto_create_conv=False)
@@ -199,7 +199,7 @@ async def handle_response(
             feature="readings", context=context
         )
 
-        await animation_while_generating_answer.stop(delete_message=True)
+        await animation_while_generating_answer.stop()
 
         #  saving conversation to database
         await update_user_info(
