@@ -5,6 +5,8 @@ from time import time
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, CallbackQuery
 
+from core.config import bot
+
 logger = logging.getLogger(__name__)
 
 
