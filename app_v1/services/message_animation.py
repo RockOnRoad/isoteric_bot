@@ -38,7 +38,9 @@ class MessageAnimation:
         self.animation_stop = asyncio.Event()
         self.animation_task: asyncio.Task | None = None
 
-    async def _animate(self) -> None:
+    async def _animate(
+        self,
+    ) -> None:
         """Внутренний метод для анимации сообщения."""
         dot_index = 0
         first_update = True
@@ -46,77 +48,50 @@ class MessageAnimation:
 
         while not self.animation_stop.is_set():
             try:
-                # Проверяем таймаут
-                if self.timeout is not None:
-                    elapsed_time = time() - start_time
-                    if elapsed_time >= self.timeout:
-                        logger.warning(
-                            f"Animation timeout reached ({self.timeout}s), stopping animation"
-                        )
-                        # Отправляем сообщение об ошибке
-                        error_text = "Во время создания образа произошла ошибка. Энергия не будет списана."
-                        if self.message:
-                            try:
-                                await self.message.edit_text(error_text)
-                            except TelegramBadRequest:
-                                # Если не удалось отредактировать, отправляем новое сообщение
-                                if isinstance(self.message_or_call, CallbackQuery):
-                                    await self.message_or_call.message.answer(
-                                        error_text
-                                    )
-                                elif isinstance(self.message_or_call, Message):
-                                    await self.message_or_call.answer(error_text)
-                        else:
-                            # Если сообщение еще не создано, создаем новое
-                            if isinstance(self.message_or_call, CallbackQuery):
-                                await self.message_or_call.message.answer(error_text)
-                            elif isinstance(self.message_or_call, Message):
-                                await self.message_or_call.answer(error_text)
-                        return
+                elapsed_time = time() - start_time
+                if elapsed_time >= self.timeout:
+                    logger.warning(
+                        f"Animation timeout reached ({self.timeout}s), stopping animation"
+                    )
+                    await self.message.delete()
+                    await bot.send_message(
+                        chat_id=self.message_or_call.from_user.id,
+                        text="Операция заняла слишком много времени",  # Тут надо прервать выполнение основной задачи
+                    )
+                    raise TimeoutError
 
                 text = f"{self.base_text}{self.dots[dot_index]}"
 
                 if first_update:
                     # Создаем сообщение при первом обновлении
-                    if isinstance(self.message_or_call, CallbackQuery):
-                        try:
-                            # Пытаемся отредактировать сообщение, убирая кнопки
-                            # Важно: reply_markup=None обязательно для сообщений с кнопками
-                            self.message = await self.message_or_call.message.edit_text(
-                                text
-                            )
-                        except TelegramBadRequest as e:
-                            # Если не удалось отредактировать, создаем новое сообщение
-                            logger.warning(f"Could not edit message, creating new: {e}")
-                            self.message = await self.message_or_call.message.answer(
-                                text
-                            )
-                    else:
-                        # Если уже есть сообщение, используем его
-                        self.message = self.message_or_call
-                        await self.message.edit_text(text)
+                    try:
+                        self.message = await bot.send_message(
+                            chat_id=self.message_or_call.from_user.id, text=text
+                        )
+                    except TelegramBadRequest as e:
+                        logger.error(f"Error sending first animation message: {e}")
+                        break
                     first_update = False
-                else:
-                    # Обновляем существующее сообщение
-                    if self.message:
-                        await self.message.edit_text(text)
 
                 dot_index = (dot_index + 1) % len(self.dots)
                 await asyncio.sleep(self.interval)
-            except TelegramBadRequest:
-                # Сообщение было удалено или изменено
-                break
+
+                # Обновляем существующее сообщение
+                try:
+                    await self.message.edit_text(text)
+                except TelegramBadRequest:
+                    continue
             except Exception as e:
                 logger.error(f"Error animating message: {e}")
                 break
 
-    def start(self) -> None:
+    async def start(self) -> None:
         """Запускает анимацию сообщения."""
         if self.animation_task is None or self.animation_task.done():
             self.animation_stop.clear()
             self.animation_task = asyncio.create_task(self._animate())
 
-    async def stop(self, delete_message: bool = False) -> None:
+    async def stop(self, delete_message: bool = True) -> None:
         """
         Останавливает анимацию сообщения.
 

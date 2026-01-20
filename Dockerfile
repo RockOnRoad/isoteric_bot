@@ -25,4 +25,4 @@ RUN pip install --upgrade pip \
     && pip install .
 
 # Запуск приложения
-CMD ["python3", "app_v1/main.py", "prod"]
+# CMD ["python3", "app_v1/main.py", "prod"]
