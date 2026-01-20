@@ -6,6 +6,7 @@ import asyncio
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, Filter
+from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -23,6 +24,7 @@ from keyboards import InlineKbd
 from prompts import PROMPT_TEMPLATES
 from services import calculate_arcana, GoogleAI, OpenAIClient, tst_webhook
 from schemas import CalculateArcana, DeleteFunc
+from services.message_animation import MessageAnimation
 
 logger = logging.getLogger(__name__)
 mnt_rtr = Router()
@@ -285,4 +287,50 @@ async def table_names(message: Message, state: FSMContext) -> None:
     await message.answer(f"Tables: {tables}")
 
 
-#  ----------- GET ALL ENTRIES -----------
+#  -------------  MESSAGE ANIMATION  -------------  #
+
+
+class MsgAnimation(CallbackData, prefix="test_msg_anim"):
+    """Callback data for message animation."""
+
+    name: str
+
+
+@mnt_rtr.message(Command("animation"), OwnerCheck())
+async def test_animation_hand(message: Message):
+
+    mes = await message.answer("Это сообщение до анимации.")
+
+    anim = MessageAnimation(
+        message_or_call=message,
+        base_text="Загружаю данные",
+    )
+    await anim.start()
+    #  Симулируем длительную операцию
+    await asyncio.sleep(15)
+    await anim.stop()
+
+    buttons = {
+        MsgAnimation(name="next").pack(): "Прочитать",
+    }
+    kbd = InlineKbd(buttons=buttons, width=1)
+
+    await mes.edit_text("Анимация завершена.", reply_markup=kbd)
+
+
+@mnt_rtr.callback_query(MsgAnimation.filter(F.name == "next"), OwnerCheck())
+async def test_animation_next_hand(call: CallbackQuery):
+    await call.answer("Нажата кнопка OK после анимации.")
+
+    mes = await call.message.answer("Это сообщение до анимации.")
+
+    anim = MessageAnimation(
+        message_or_call=call,
+        base_text="Читаю данные",
+    )
+    await anim.start()
+    #  Симулируем длительную операцию
+    await asyncio.sleep(15)
+    await anim.stop()
+
+    await mes.edit_text("Анимация завершена.")
