@@ -234,8 +234,6 @@ async def handle_generate_portrait(
         #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
         # )
 
-        await animation_while_generating_picture.stop()
-
         await call.message.delete()
         await asyncio.sleep(0.2)
 
@@ -260,6 +258,8 @@ async def handle_generate_portrait(
         user = await get_user_by_telegram_id(call.from_user.id, db_session)
 
         await decrease_user_balance(user.id, COST["ai_portrait"], db_session)
+
+        await animation_while_generating_picture.stop()
 
         await call.message.answer_photo(
             photo=picture, caption=msg, reply_markup=kbd.markup

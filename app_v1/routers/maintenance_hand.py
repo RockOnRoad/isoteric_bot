@@ -311,7 +311,7 @@ async def test_animation_hand(message: Message):
     await anim.stop()
 
     buttons = {
-        MsgAnimation(name="next").pack(): "Прочитать",
+        "Прочитать": MsgAnimation(name="next").pack(),
     }
     kbd = InlineKbd(buttons=buttons, width=1)
 
