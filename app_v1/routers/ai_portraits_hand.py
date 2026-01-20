@@ -257,14 +257,13 @@ async def handle_generate_portrait(
 
         user = await get_user_by_telegram_id(call.from_user.id, db_session)
 
-        await decrease_user_balance(user.id, COST["ai_portrait"], db_session)
-
         await animation_while_generating_picture.stop()
 
         await call.message.answer_photo(
             photo=picture, caption=msg, reply_markup=kbd.markup
         )
         # await call.message.answer(msg, reply_markup=kbd.markup)
+        await decrease_user_balance(user.id, COST["ai_portrait"], db_session)
     else:
         await state.clear()
         return

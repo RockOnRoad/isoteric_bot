@@ -118,26 +118,22 @@ class GoogleAI:
             ),
         )
 
-        try:
-            for attempt in range(5):
-                response = self.client.models.generate_content(
-                    model=model,
-                    contents=prompt,
-                    config=config,
-                )
-                for part in response.parts:
-                    if part.inline_data:
-                        # Получаем байты изображения напрямую из inline_data
-                        img_bytes: BytesIO = BytesIO(part.inline_data.data)
-                        img_bytes.seek(0)
+        for attempt in range(5):
+            response = self.client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config,
+            )
+            for part in response.parts:
+                if part.inline_data:
+                    # Получаем байты изображения напрямую из inline_data
+                    img_bytes: BytesIO = BytesIO(part.inline_data.data)
+                    img_bytes.seek(0)
 
-                        photo: BufferedInputFile = BufferedInputFile(
-                            img_bytes.getvalue(), filename="portrait.jpg"
-                        )
-                        return photo
-        except Exception as e:
-            logger.error(f"Error generating picture: {e}")
-
+                    photo: BufferedInputFile = BufferedInputFile(
+                        img_bytes.getvalue(), filename="portrait.jpg"
+                    )
+                    return photo
         return None
 
     async def google_models(self) -> list[str]:
