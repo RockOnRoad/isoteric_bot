@@ -17,15 +17,15 @@ from services import ARCANA_MAP, calculate_arcana
 logger = logging.getLogger(__name__)
 
 
-class GoogleAIUnsupportedLocation(ClientError):
+class GoogleAIUnsupportedLocation(Exception):
     """Exception raised by Gemini API when client location is unsupported."""
 
 
-class GoogleAILimitError(ClientError):
+class GoogleAILimitError(Exception):
     """Exception raised when Gemini API rate limit is hit."""
 
 
-class GoogleAIUnavailable(ClientError):
+class GoogleAIUnavailable(Exception):
     """Exception raised when Gemini API is unavailable."""
 
 
@@ -40,6 +40,21 @@ async def handle_google_ai_error(
     logger.error(f"Google AI error: {error}")
     if isinstance(error, GoogleAIUnsupportedLocation):
         logger.error(f"Gemini unsupported location: {error}")
+        for dev in devs:
+            await bot.send_message(
+                chat_id=int(dev),
+                text=(
+                    "Изображение для пользователя\n"
+                    f"<b>{upd.from_user.id} @{upd.from_user.username}</b>\n"
+                    "не было сгенерировано поскольку местоположение сервера не поддерживается\n\n"
+                    f"{error}"
+                ),
+            )
+
+        if isinstance(upd, CallbackQuery):
+            await upd.message.answer(ERROR_ANSWER)
+        elif isinstance(upd, Message):
+            await upd.answer(ERROR_ANSWER)
         return
 
     if isinstance(error, GoogleAILimitError):
@@ -48,10 +63,10 @@ async def handle_google_ai_error(
             await bot.send_message(
                 chat_id=int(dev),
                 text=(
-                    "Изображение для пользователя "
-                    f"{upd.from_user.id} @{upd.from_user.username} "
-                    "не было сгенерировано, так как израсходована "
-                    "квота на Google AI"
+                    "Изображение для пользователя\n"
+                    f"<b>{upd.from_user.id} @{upd.from_user.username}</b>\n"
+                    "не было сгенерировано. Израсходована квота Google AI\n\n"
+                    f"{error}"
                 ),
             )
         if isinstance(upd, CallbackQuery):
@@ -62,6 +77,20 @@ async def handle_google_ai_error(
 
     if isinstance(error, GoogleAIUnavailable):
         logger.error(f"Gemini API is unavailable: {error}")
+        for dev in devs:
+            await bot.send_message(
+                chat_id=int(dev),
+                text=(
+                    "Изображение для пользователя\n"
+                    f"<b>{upd.from_user.id} @{upd.from_user.username}</b>\n"
+                    "не было сгенерировано. Недоступен сервис Google AI\n\n"
+                    f"{error}"
+                ),
+            )
+        if isinstance(upd, CallbackQuery):
+            await upd.message.answer(ERROR_ANSWER)
+        elif isinstance(upd, Message):
+            await upd.answer(ERROR_ANSWER)
         return
 
 
@@ -189,10 +218,12 @@ class GoogleAI:
                         return photo
         except ClientError as e:
             if e.code == 400:
-                raise GoogleAIUnsupportedLocation("Gemini unsupported location") from e
+                raise GoogleAIUnsupportedLocation(
+                    f"{e.code}: {e.status}\n{e.message}"
+                ) from e
             if e.code == 429:
-                raise GoogleAILimitError("Gemini rate limit hit") from e
-            raise GoogleAIUnavailable("Gemini failed ") from e
+                raise GoogleAILimitError(f"{e.code}: {e.status}\n{e.message}") from e
+            raise GoogleAIUnavailable(f"{e.code}: {e.status}\n{e.message}") from e
 
     async def google_models(self) -> list[str]:
         """

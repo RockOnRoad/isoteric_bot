@@ -19,7 +19,14 @@ from schemas import (
     BalanceCheck,
     LkButton,
 )
-from services import GoogleAI, MessageAnimation, handle_google_ai_error
+from services import (
+    GoogleAI,
+    MessageAnimation,
+    handle_google_ai_error,
+    GoogleAIUnsupportedLocation,
+    GoogleAILimitError,
+    GoogleAIUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 ai_portraits_rtr = Router()
@@ -222,6 +229,7 @@ async def handle_generate_portrait(
             base_text="✨ Настраиваюсь на поток",
         )
         await animation_while_generating_picture.start()
+        await asyncio.sleep(2)
 
         try:
             #  Получаем изображение
@@ -232,12 +240,15 @@ async def handle_generate_portrait(
                 #  Сразу после начала генерации сбрасываем состояние чтобы не стартанула следующая генерация
                 state=state,
             )
-        except ClientError as e:
+        except (
+            GoogleAIUnsupportedLocation,
+            GoogleAILimitError,
+            GoogleAIUnavailable,
+        ) as e:
             await handle_google_ai_error(
                 error=e, upd=call, animation=animation_while_generating_picture
             )
             return
-        await animation_while_generating_picture.stop()
 
         await call.message.delete()
         await asyncio.sleep(0.2)
