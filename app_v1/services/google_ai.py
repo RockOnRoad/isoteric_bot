@@ -4,15 +4,68 @@ from io import BytesIO
 from pathlib import Path
 
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from google.genai import Client
+from google.genai.errors import ClientError
 from google.genai.types import GenerateContentConfig, ImageConfig
 
-from core.config import settings
+from core.config import settings, devs, bot
+from schemas import ERROR_ANSWER
 from prompts import PROMPT_TEMPLATES
 from services import ARCANA_MAP, calculate_arcana
 
 logger = logging.getLogger(__name__)
+
+
+class GoogleAIUnsupportedLocation(ClientError):
+    """Exception raised by Gemini API when client location is unsupported."""
+
+
+class GoogleAILimitError(ClientError):
+    """Exception raised when Gemini API rate limit is hit."""
+
+
+class GoogleAIUnavailable(ClientError):
+    """Exception raised when Gemini API is unavailable."""
+
+
+async def handle_google_ai_error(
+    error: Exception,
+    upd: CallbackQuery | Message,
+    *,
+    animation=None,
+) -> None:
+    if animation:
+        await animation.stop()
+    logger.error(f"Google AI error: {error}")
+    if isinstance(error, GoogleAIUnsupportedLocation):
+        logger.error(f"Gemini unsupported location: {error}")
+        return
+
+    if isinstance(error, GoogleAILimitError):
+        logger.error(f"Gemini rate limit hit: {error}")
+        for dev in devs:
+            await bot.send_message(
+                chat_id=int(dev),
+                text=(
+                    "Изображение для пользователя "
+                    f"{upd.from_user.id} @{upd.from_user.username} "
+                    "не было сгенерировано, так как израсходована "
+                    "квота на Google AI"
+                ),
+            )
+        if isinstance(upd, CallbackQuery):
+            await upd.message.answer(ERROR_ANSWER)
+        elif isinstance(upd, Message):
+            await upd.answer(ERROR_ANSWER)
+        return
+
+    if isinstance(error, GoogleAIUnavailable):
+        logger.error(f"Gemini API is unavailable: {error}")
+        return
+
+
+#  ----------- GOOGLE AI SERVICE -----------
 
 
 class GoogleAI:
@@ -117,24 +170,29 @@ class GoogleAI:
                 aspect_ratio="16:9",
             ),
         )
+        try:
+            for attempt in range(5):
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=config,
+                )
+                for part in response.parts:
+                    if part.inline_data:
+                        # Получаем байты изображения напрямую из inline_data
+                        img_bytes: BytesIO = BytesIO(part.inline_data.data)
+                        img_bytes.seek(0)
 
-        for attempt in range(5):
-            response = self.client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=config,
-            )
-            for part in response.parts:
-                if part.inline_data:
-                    # Получаем байты изображения напрямую из inline_data
-                    img_bytes: BytesIO = BytesIO(part.inline_data.data)
-                    img_bytes.seek(0)
-
-                    photo: BufferedInputFile = BufferedInputFile(
-                        img_bytes.getvalue(), filename="portrait.jpg"
-                    )
-                    return photo
-        return None
+                        photo: BufferedInputFile = BufferedInputFile(
+                            img_bytes.getvalue(), filename="portrait.jpg"
+                        )
+                        return photo
+        except ClientError as e:
+            if e.code == 400:
+                raise GoogleAIUnsupportedLocation("Gemini unsupported location") from e
+            if e.code == 429:
+                raise GoogleAILimitError("Gemini rate limit hit") from e
+            raise GoogleAIUnavailable("Gemini failed ") from e
 
     async def google_models(self) -> list[str]:
         """

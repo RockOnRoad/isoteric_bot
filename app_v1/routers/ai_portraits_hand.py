@@ -7,6 +7,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from google.genai.errors import ClientError
 
 from core.config import COST
 from db.crud import get_user_by_telegram_id, get_user_balance, decrease_user_balance
@@ -18,7 +19,7 @@ from schemas import (
     BalanceCheck,
     LkButton,
 )
-from services import GoogleAI, MessageAnimation
+from services import GoogleAI, MessageAnimation, handle_google_ai_error
 
 logger = logging.getLogger(__name__)
 ai_portraits_rtr = Router()
@@ -222,17 +223,21 @@ async def handle_generate_portrait(
         )
         await animation_while_generating_picture.start()
 
-        #  Получаем изображение
-        client = GoogleAI()
-        picture: BufferedInputFile | None = await client.generate_picture(
-            feature="ai_portraits",
-            context=context,
-            #  Сразу после начала генерации сбрасываем состояние чтобы не стартанула следующая генерация
-            state=state,
-        )
-        # picture = FSInputFile(
-        #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
-        # )
+        try:
+            #  Получаем изображение
+            client = GoogleAI()
+            picture: BufferedInputFile | None = await client.generate_picture(
+                feature="ai_portraits",
+                context=context,
+                #  Сразу после начала генерации сбрасываем состояние чтобы не стартанула следующая генерация
+                state=state,
+            )
+        except ClientError as e:
+            await handle_google_ai_error(
+                error=e, upd=call, animation=animation_while_generating_picture
+            )
+            return
+        await animation_while_generating_picture.stop()
 
         await call.message.delete()
         await asyncio.sleep(0.2)

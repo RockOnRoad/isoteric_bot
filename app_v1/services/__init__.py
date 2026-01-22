@@ -2,7 +2,11 @@ __all__ = [
     "get_admin_stats",
     "calculate_arcana",
     "ARCANA_MAP",
+    "handle_google_ai_error",
     "GoogleAI",
+    "GoogleAILimitError",
+    "GoogleAIUnavailable",
+    "GoogleAIUnsupportedLocation",
     "MessageAnimation",
     "OpenAIClient",
     "PaymentPoller",
@@ -15,7 +19,13 @@ __all__ = [
 
 from .admin_stats import get_admin_stats
 from .arcana_serv import calculate_arcana, ARCANA_MAP
-from .google_ai import GoogleAI
+from .google_ai import (
+    handle_google_ai_error,
+    GoogleAI,
+    GoogleAILimitError,
+    GoogleAIUnavailable,
+    GoogleAIUnsupportedLocation,
+)
 from .message_animation import MessageAnimation
 from .openai import OpenAIClient
 from .payment_poller import PaymentPoller

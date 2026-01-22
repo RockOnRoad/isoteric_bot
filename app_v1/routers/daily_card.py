@@ -5,10 +5,11 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
+from google.genai.errors import ClientError
 
 from core.config import COST
 from db.crud import get_user_by_telegram_id, update_user_info, decrease_user_balance
-from services import GoogleAI, OpenAIClient
+from services import GoogleAI, OpenAIClient, handle_google_ai_error
 from keyboards import InlineKbd
 from schemas import LkButton
 from services import MessageAnimation
@@ -70,11 +71,11 @@ async def handle_daily_card_main(
         }
 
         # Анимация сообщения во время генерации ответа
-        animation_while_generating_response = MessageAnimation(
+        animation_while_generating_image = MessageAnimation(
             message_or_call=update,
             base_text="✨ Настраиваюсь на поток",
         )
-        await animation_while_generating_response.start()
+        await animation_while_generating_image.start()
 
         #  Получаем текст
         client = OpenAIClient(auto_create_conv=True)
@@ -84,19 +85,26 @@ async def handle_daily_card_main(
 
         context["chatGPT_answer"] = answer
 
-        #  Получаем изображение
-        client = GoogleAI()
-        picture: BufferedInputFile | None = await client.generate_picture(
-            feature="daily_card",
-            context=context,
-            #  Сразу после начала генерации сбрасываем состояние чтобы не стартанула следующая генерация
-            state=state,
-        )
-        # picture = FSInputFile(
-        #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
-        # )
+        try:
+            #  Получаем изображение
+            client = GoogleAI()
+            picture: BufferedInputFile | None = await client.generate_picture(
+                feature="daily_card",
+                context=context,
+                #  Сразу после начала генерации сбрасываем состояние чтобы не стартанула следующая генерация
+                state=state,
+            )
+            # picture = FSInputFile(
+            #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
+            # )
 
-        await animation_while_generating_response.stop()
+        except ClientError as e:
+            await handle_google_ai_error(
+                error=e, upd=update, animation=animation_while_generating_image
+            )
+            return
+
+        await animation_while_generating_image.stop()
 
         if isinstance(update, CallbackQuery):
             await update.message.edit_text("Вы еще не получили карту дня")

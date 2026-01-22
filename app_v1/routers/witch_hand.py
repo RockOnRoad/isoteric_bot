@@ -6,6 +6,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from google.genai.errors import ClientError
 
 from core.config import COST
 from db.crud import (
@@ -23,7 +24,12 @@ from schemas import (
     ReadingsDomain,
     ReadingsStates,
 )
-from services import GoogleAI, OpenAIClient, MessageAnimation
+from services import (
+    handle_google_ai_error,
+    GoogleAI,
+    OpenAIClient,
+    MessageAnimation,
+)
 
 logger = logging.getLogger(__name__)
 witch_rtr = Router()
@@ -71,16 +77,22 @@ async def stir_the_cauldron(
     await update_user_info(user_id, data, db_session)
 
     #  Генерируем изображение
-    client = GoogleAI()
-    photo: BufferedInputFile | None = await client.generate_picture(
-        feature="first",
-        context=data,
-        state=state,
-    )
+    try:
+        client = GoogleAI()
+        photo: BufferedInputFile | None = await client.generate_picture(
+            feature="first",
+            context=data,
+            state=state,
+        )
     # photo = FSInputFile(
     #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
     # )
     # await asyncio.sleep(5)
+    except ClientError as e:
+        await handle_google_ai_error(
+            error=e, upd=call, animation=animation_while_generating_image
+        )
+        return
 
     await animation_while_generating_image.stop()
 

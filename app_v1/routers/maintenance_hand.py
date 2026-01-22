@@ -309,6 +309,7 @@ async def test_animation_hand(message: Message):
     #  Симулируем длительную операцию
     await asyncio.sleep(15)
     await anim.stop()
+    await anim.stop()
 
     buttons = {
         "Прочитать": MsgAnimation(name="next").pack(),

@@ -1,5 +1,7 @@
 # import sys
 import os
+import json
+import pathlib
 from dotenv import load_dotenv
 from pydantic import Field, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -32,6 +34,13 @@ YK_TRUSTED_NETWORKS = [
 ]
 
 RELATED_CHANNELS = ["@neiro_office", "@nion_neiro"]
+
+
+with open(pathlib.Path(__file__).parent / "roles.json", "r") as f:
+    roles = json.load(f)
+    owners: list[str] = roles["owners"]
+    admins: list[str] = roles["admins"]
+    devs: list[str] = roles["devs"]
 
 
 class YKPaymentsConfig(BaseModel):

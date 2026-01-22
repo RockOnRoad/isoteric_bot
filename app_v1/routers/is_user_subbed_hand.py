@@ -51,8 +51,9 @@ class NotASub(Filter):
                     member = await bot.get_chat_member(
                         chat_id=channel, user_id=update.from_user.id  # or channel_id
                     )
-                except TelegramBadRequest:
-                    return True
+                except TelegramBadRequest as e:
+                    if e.message == "Bad Request: member list is inaccessible":
+                        continue
                 if member.status not in sub_statuses:
                     return True
             return False
