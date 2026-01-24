@@ -22,7 +22,7 @@ from db.crud import (
 )
 from keyboards import InlineKbd
 from prompts import PROMPT_TEMPLATES
-from services import calculate_arcana, GoogleAI, OpenAIClient, tst_webhook
+from services import calculate_arcana, GoogleAI, OpenAIClient
 from schemas import CalculateArcana, DeleteFunc
 from services.message_animation import MessageAnimation
 
@@ -236,14 +236,6 @@ async def zips(message: Message, state: FSMContext) -> None:
     await message.answer(f"Length: {len(one_by_one)}")
     for key, value in zip(one_by_one[::2], one_by_one[1::2]):
         await message.answer(f"{key}: {value}")
-
-
-#  ----------- TEST WEBHOOK -----------
-
-
-@mnt_rtr.message(Command("webhook"), OwnerCheck())
-async def webhook(message: Message, state: FSMContext) -> None:
-    await tst_webhook(message)
 
 
 #  ----------- GET A LIST OF CHANNEL SUBS -----------
