@@ -25,5 +25,5 @@ RUN pip install --upgrade pip \
     && pip install .
 
 # Запуск приложения
-ENTRYPOINT ["python3", "-u"]
-CMD ["app_v1/main.py"]
+# ENTRYPOINT ["python3", "-u"]
+# CMD ["app_v1/main.py"]
