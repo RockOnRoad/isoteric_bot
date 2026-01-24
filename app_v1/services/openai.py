@@ -3,13 +3,51 @@ import logging
 import yaml
 from pathlib import Path
 
-from openai import AsyncOpenAI
+from aiogram.types import CallbackQuery, Message
+from openai import AsyncOpenAI, PermissionDeniedError
 
-from core.config import settings
+from core.config import settings, OPENAI_MODEL, devs, bot
 from prompts import PROMPT_TEMPLATES
+from schemas import GENERATION_ERROR_ANSWER
 from services import calculate_arcana, ARCANA_MAP
 
 logger = logging.getLogger(__name__)
+
+
+class OpenAIUnsupportedLocation(Exception):
+    """Exception raised by OpenAI API when client location is unsupported."""
+
+
+async def handle_openai_error(
+    error: Exception,
+    upd: CallbackQuery | Message,
+    *,
+    job: str = "unknown",
+    user_answer: str = GENERATION_ERROR_ANSWER,
+    animation=None,
+) -> None:
+
+    if animation:
+        await animation.stop()
+    logger.error(f"OpenAI error")
+    if isinstance(error, OpenAIUnsupportedLocation):
+        logger.error(f"OpenAI unsupported location: {error}")
+        for dev in devs:
+            await bot.send_message(
+                chat_id=int(dev),
+                text=(
+                    f"Текст <b>{job}</b> для пользователя\n"
+                    f"<b>{upd.from_user.id} @{upd.from_user.username}</b>\n"
+                    "не был сгенерирован поскольку местоположение сервера не поддерживается <b>OpenAI</b>\n\n"
+                    f"{error}"
+                ),
+            )
+
+        if isinstance(upd, CallbackQuery):
+            await upd.message.answer(user_answer)
+        elif isinstance(upd, Message):
+            await upd.answer(user_answer)
+        return
 
 
 class OpenAIClient:
@@ -49,10 +87,21 @@ class OpenAIClient:
         Returns:
             ID разговора.
         """
-        if self._conversation_id is None:
-            conversation = await self.client.conversations.create()
-            self._conversation_id = conversation.id
-        return self._conversation_id
+        try:
+            if self._conversation_id is None:
+                conversation = await self.client.conversations.create()
+                self._conversation_id = conversation.id
+            return self._conversation_id
+        except PermissionDeniedError as e:
+            if e.status_code == 403:
+                print(e.body["message"])
+                raise OpenAIUnsupportedLocation(
+                    f"{e.response}\n{e.body['message']}".replace("<", "").replace(
+                        ">", ""
+                    )
+                ) from e
+            else:
+                raise e
 
     # async def chatgpt_response(
     #     self,
@@ -88,7 +137,7 @@ class OpenAIClient:
         feature: str,
         context: dict,
         *,
-        model: str = "gpt-5.1-chat-latest",
+        model: str = OPENAI_MODEL,
         max_length: int = 4090,
         max_attempts: int = 5,
     ) -> tuple[str, str]:
@@ -192,15 +241,24 @@ class OpenAIClient:
                 )
                 answer = response.output_text
             return answer, conversation_id
+
+        except PermissionDeniedError as e:
+            if e.status_code == 403:
+                print(e.body["message"])
+                raise OpenAIUnsupportedLocation(
+                    f"{e.response}\n{e.body['message']}".replace("<", "").replace(
+                        ">", ""
+                    )
+                ) from e
         except Exception as e:
             logger.error(f"Error generating response: {e}")
-            return "", conversation_id
+            raise e
 
     async def chatgpt_response_follow_up(
         self,
         prompt: str,
         *,
-        model: str = "gpt-5.1-chat-latest",
+        model: str = OPENAI_MODEL,
     ):
         response = await self.client.responses.create(
             model=model, input=prompt, conversation=self._conversation_id

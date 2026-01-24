@@ -36,6 +36,10 @@ YK_TRUSTED_NETWORKS = [
 RELATED_CHANNELS = ["@neiro_office", "@nion_neiro"]
 
 
+GOOGLE_AI_MODEL = "gemini-2.5-flash-image"
+OPENAI_MODEL = "gpt-5.1-chat-latest"
+
+
 with open(pathlib.Path(__file__).parent / "roles.json", "r") as f:
     roles = json.load(f)
     owners: list[str] = roles["owners"]

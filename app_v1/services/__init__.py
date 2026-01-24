@@ -9,6 +9,8 @@ __all__ = [
     "GoogleAIUnsupportedLocation",
     "MessageAnimation",
     "OpenAIClient",
+    "handle_openai_error",
+    "OpenAIUnsupportedLocation",
     "PaymentPoller",
     "PaymentService",
     "tst_webhook",
@@ -27,7 +29,7 @@ from .google_ai import (
     GoogleAIUnsupportedLocation,
 )
 from .message_animation import MessageAnimation
-from .openai import OpenAIClient
+from .openai import OpenAIClient, handle_openai_error, OpenAIUnsupportedLocation
 from .payment_poller import PaymentPoller
 from .yk_payments import PaymentService
 from .tst_webhook import tst_webhook

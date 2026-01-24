@@ -9,17 +9,29 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.config import COST
-from services import OpenAIClient, MessageAnimation
-from schemas import ReadingsDomain, ReadingsSub, ReadingsStates, BalanceCheck, LkButton
+from core.config import COST, OPENAI_MODEL
+from services import (
+    OpenAIClient,
+    MessageAnimation,
+    handle_openai_error,
+    OpenAIUnsupportedLocation,
+)
+from schemas import (
+    ReadingsDomain,
+    ReadingsSub,
+    ReadingsStates,
+    BalanceCheck,
+    LkButton,
+    GENERATION_ERROR_ANSWER,
+)
 from keyboards import InlineKbd
 from db.crud import (
     get_user_by_telegram_id,
     update_user_info,
     get_user_balance,
     decrease_user_balance,
+    add_generation,
 )
-
 
 logger = logging.getLogger(__name__)
 readings_rtr = Router()
@@ -193,11 +205,46 @@ async def handle_response(
         )
         await animation_while_generating_answer.start()
 
-        #  Getting response from OpenAI
-        client = OpenAIClient(auto_create_conv=False)
-        answer, conversation_id = await client.chatgpt_response(
-            feature="readings", context=context
-        )
+        request = {
+            "job": "readings",
+            **context,
+        }
+        user = await get_user_by_telegram_id(call.from_user.id, db_session)
+        gen_data = {
+            "user_id": user.id,
+            "model": OPENAI_MODEL,
+            "request": request,
+            "cost": COST["reading"],
+            "gen_type": "text",
+        }
+
+        try:
+            #  Getting response from OpenAI
+            client = OpenAIClient(auto_create_conv=False)
+            answer, conversation_id = await client.chatgpt_response(
+                feature="readings", context=context
+            )
+        except OpenAIUnsupportedLocation as e:
+            await handle_openai_error(
+                error=e,
+                upd=call,
+                job="readings",
+                animation=animation_while_generating_answer,
+            )
+            #  Сохранение записи о генерации в базу данных
+            gen_data["gen_status"] = "error"
+            generation = await add_generation(
+                session=db_session, commit=True, **gen_data
+            )
+            return
+        except Exception as e:
+            #  Аварийная остановка анимации
+            await animation_while_generating_answer.stop()
+            gen_data["gen_status"] = "error"
+            generation = await add_generation(
+                session=db_session, commit=True, **gen_data
+            )
+            raise e
 
         await animation_while_generating_answer.stop()
 
@@ -209,6 +256,16 @@ async def handle_response(
 
         user = await get_user_by_telegram_id(call.from_user.id, db_session)
 
+        #  Отправка ответа
+        try:
+            await call.message.edit_text(answer)
+        except TelegramBadRequest as e:
+            if e.message == "Bad Request: message text is empty":
+                await call.message.answer(GENERATION_ERROR_ANSWER)
+                return
+            else:
+                await call.message.answer(answer)
+
         #  Списание энергии
         new_balance = await decrease_user_balance(
             user.id,
@@ -216,14 +273,12 @@ async def handle_response(
             db_session,
         )
 
+        #  Сохранение записи о генерации в базу данных
+        gen_data["gen_status"] = "success"
+        generation = await add_generation(session=db_session, commit=True, **gen_data)
+
         #  Обновляем стоимость следующего разбора
         await state.update_data(cost=COST["follow_up"])
-
-        #  Отправка ответа
-        try:
-            await call.message.edit_text(answer)
-        except TelegramBadRequest:
-            await call.message.answer(answer)
 
     else:
         return
@@ -235,6 +290,7 @@ async def handle_response(
 @readings_rtr.callback_query(ReadingsSub.filter(), ReadingsStates.aspect)
 async def handle_no_readings_for_poor(
     call: CallbackQuery,
+    callback_data: ReadingsSub,
     state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
@@ -262,3 +318,22 @@ async def handle_no_readings_for_poor(
         ),
         reply_markup=kbd.markup,
     )
+
+    #  Сохранение записи о генерации в базу данных
+    context = await state.get_data()
+    context["domain"] = callback_data.domain
+    context["aspect"] = callback_data.aspect
+    request = {
+        "job": "readings",
+        **context,
+    }
+    user = await get_user_by_telegram_id(call.from_user.id, db_session)
+    gen_data = {
+        "user_id": user.id,
+        "model": OPENAI_MODEL,
+        "request": request,
+        "gen_type": "text",
+        "cost": COST["reading"],
+        "gen_status": "not_enough_balance",
+    }
+    generation = await add_generation(session=db_session, commit=True, **gen_data)

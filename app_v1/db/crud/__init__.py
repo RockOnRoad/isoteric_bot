@@ -20,6 +20,7 @@ __all__ = (
     "get_user_referral_bonuses_total",
     "add_user_bonus",
     "get_user_bonus_by_name",
+    "add_generation",
 )
 
 from .users_crud import (
@@ -49,3 +50,4 @@ from .ref_bonuses_crud import (
     get_user_referral_bonuses_total,
 )
 from .user_bonuses_crud import add_user_bonus, get_user_bonus_by_name
+from .generations_crud import add_generation

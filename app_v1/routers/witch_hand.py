@@ -6,14 +6,14 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from google.genai.errors import ClientError
 
-from core.config import COST
+from core.config import COST, GOOGLE_AI_MODEL, OPENAI_MODEL
 from db.crud import (
     # get_or_create_user,
     update_user_info,
     get_user_by_telegram_id,
     decrease_user_balance,
+    add_generation,
 )
 from keyboards import InlineKbd
 from schemas import (
@@ -29,6 +29,11 @@ from services import (
     GoogleAI,
     OpenAIClient,
     MessageAnimation,
+    GoogleAIUnsupportedLocation,
+    GoogleAILimitError,
+    GoogleAIUnavailable,
+    handle_openai_error,
+    OpenAIUnsupportedLocation,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,10 +77,22 @@ async def stir_the_cauldron(
     }
     await state.clear()
 
-    #  updating user input info in database
-    user_id = call.from_user.id
-    await update_user_info(user_id, data, db_session)
+    user = await get_user_by_telegram_id(call.from_user.id, db_session)
 
+    request = {
+        "job": "starter_generation",
+        "name": fsm_data["name"],
+        "sex": fsm_data["sex"],
+        "birthday": fsm_data["birthday"],
+    }
+    gen_data = {
+        "user_id": user.id,
+        "model": f"{GOOGLE_AI_MODEL}, {OPENAI_MODEL}",
+        "request": request,
+        "cost": COST["witchcraft"],
+        "gen_type": "image, text",
+    }
+    generation = None
     #  Генерируем изображение
     try:
         client = GoogleAI()
@@ -84,13 +101,24 @@ async def stir_the_cauldron(
             context=data,
             state=state,
         )
-    # photo = FSInputFile(
-    #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
-    # )
-    # await asyncio.sleep(5)
-    except ClientError as e:
+        # photo = FSInputFile(
+        #     "app_v1/src/assets/owl_pic_620_6b3d4bb80adc24b34ad43895d6d7ae8e.jpg"
+        # )
+        # await asyncio.sleep(5)
+        gen_data["gen_status"] = "success"
+        generation = await add_generation(session=db_session, commit=False, **gen_data)
+    except (
+        GoogleAIUnsupportedLocation,
+        GoogleAILimitError,
+        GoogleAIUnavailable,
+    ) as e:
+        gen_data["gen_status"] = "error"
+        generation = await add_generation(session=db_session, commit=True, **gen_data)
         await handle_google_ai_error(
-            error=e, upd=call, animation=animation_while_generating_image
+            error=e,
+            upd=call,
+            job="starter_generation",
+            animation=animation_while_generating_image,
         )
         return
 
@@ -103,10 +131,50 @@ async def stir_the_cauldron(
     await animation_while_generating_text.start()
 
     # getting message
-    client = OpenAIClient(auto_create_conv=False)
-    answer, conversation_id = await client.chatgpt_response(
-        feature="first", context=data, max_length=1020
-    )
+    try:
+        client = OpenAIClient(auto_create_conv=False)
+        answer, conversation_id = await client.chatgpt_response(
+            feature="first", context=data, max_length=1020
+        )
+        if generation:
+            generation.gen_status = "success"
+            await db_session.commit()
+        else:
+            gen_data["gen_status"] = "success"
+            generation = await add_generation(
+                session=db_session, commit=True, **gen_data
+            )
+    except OpenAIUnsupportedLocation as e:
+        await handle_openai_error(
+            error=e,
+            upd=call,
+            job="starter_generation",
+            animation=animation_while_generating_text,
+        )
+        #  Сохранение записи о генерации в базу данных
+        if generation:
+            generation.gen_status = "error"
+            await db_session.commit()
+        else:
+            gen_data["gen_status"] = "error"
+            generation = await add_generation(
+                session=db_session, commit=True, **gen_data
+            )
+        return
+    except Exception as e:
+        if generation:
+            generation.gen_status = "error"
+            await db_session.commit()
+        else:
+            gen_data["gen_status"] = "error"
+            generation = await add_generation(
+                session=db_session, commit=True, **gen_data
+            )
+        raise e
+
+    #  updating user input info in database
+    user_id = call.from_user.id
+    await update_user_info(user_id, data, db_session)
 
     readings_main_buttons = {
         "💸 Деньги": ReadingsDomain(button="wealth").pack(),
@@ -131,7 +199,6 @@ async def stir_the_cauldron(
         pass
 
     #  Подготовка к переходу к разделу разборов
-    user = await get_user_by_telegram_id(call.from_user.id, db_session)
     await state.set_state(ReadingsStates.witch)
     await state.update_data(name=user.name, birthday=user.birthday, sex=user.sex)
 

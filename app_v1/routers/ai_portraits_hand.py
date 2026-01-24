@@ -2,6 +2,7 @@ import asyncio
 import logging
 import yaml
 from pathlib import Path
+from typing import Any
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
@@ -9,8 +10,13 @@ from aiogram.types import Message, CallbackQuery, BufferedInputFile, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from google.genai.errors import ClientError
 
-from core.config import COST
-from db.crud import get_user_by_telegram_id, get_user_balance, decrease_user_balance
+from core.config import COST, GOOGLE_AI_MODEL
+from db.crud import (
+    add_generation,
+    get_user_by_telegram_id,
+    get_user_balance,
+    decrease_user_balance,
+)
 from keyboards import InlineKbd
 from schemas import (
     AiPortrait,
@@ -219,9 +225,22 @@ async def handle_generate_portrait(
 
     await call.answer()
 
-    context = await state.get_data()
+    context: dict[str, Any] = await state.get_data()
 
     if context:
+
+        request = {
+            "job": "ai_portraits",
+            **context,
+        }
+        user = await get_user_by_telegram_id(call.from_user.id, db_session)
+        gen_data = {
+            "user_id": user.id,
+            "model": GOOGLE_AI_MODEL,
+            "request": request,
+            "cost": COST["ai_portrait"],
+            "gen_type": "image",
+        }
 
         # Анимация сообщения во время генерации ответа
         animation_while_generating_picture = MessageAnimation(
@@ -229,7 +248,6 @@ async def handle_generate_portrait(
             base_text="✨ Настраиваюсь на поток",
         )
         await animation_while_generating_picture.start()
-        await asyncio.sleep(2)
 
         try:
             #  Получаем изображение
@@ -240,13 +258,28 @@ async def handle_generate_portrait(
                 #  Сразу после начала генерации сбрасываем состояние чтобы не стартанула следующая генерация
                 state=state,
             )
+            if picture:
+                gen_data["gen_status"] = "success"
+            else:
+                gen_data["gen_status"] = "error"
+            generation = await add_generation(
+                session=db_session, commit=True, **gen_data
+            )
+
         except (
             GoogleAIUnsupportedLocation,
             GoogleAILimitError,
             GoogleAIUnavailable,
         ) as e:
             await handle_google_ai_error(
-                error=e, upd=call, animation=animation_while_generating_picture
+                error=e,
+                upd=call,
+                job="ai_portraits",
+                animation=animation_while_generating_picture,
+            )
+            gen_data["gen_status"] = "error"
+            generation = await add_generation(
+                session=db_session, commit=True, **gen_data
             )
             return
 
@@ -318,3 +351,20 @@ async def handle_no_ai_portraits_for_poor(
         ),
         reply_markup=kbd.markup,
     )
+
+    context: dict[str, Any] = await state.get_data()
+
+    request = {
+        "job": "ai_portraits",
+        **context,
+    }
+    user = await get_user_by_telegram_id(call.from_user.id, db_session)
+    gen_data = {
+        "user_id": user.id,
+        "model": GOOGLE_AI_MODEL,
+        "request": request,
+        "gen_type": "image",
+        "cost": COST["ai_portrait"],
+        "gen_status": "not_enough_balance",
+    }
+    generation = await add_generation(session=db_session, commit=True, **gen_data)

@@ -9,7 +9,8 @@ __all__ = (
     "BONUSES",
     "DailyCardStates",
     "EmailStates",
-    "ERROR_ANSWER",
+    "GENERATION_ERROR_ANSWER",
+    "WITCHCRAFT_ERROR_ANSWER",
     "LkButton",
     "LkTopUp",
     "ReferalLink",
@@ -30,7 +31,7 @@ from .bio_sch import BioEdit, BioCorrect, BioSex, BioStates
 from .bonuses_sch import BONUSES
 from .daily_card_sch import DailyCardStates
 from .email_sch import EmailStates
-from .error_answer import ERROR_ANSWER
+from .error_answer import GENERATION_ERROR_ANSWER, WITCHCRAFT_ERROR_ANSWER
 from .lk_sch import LkButton, LkTopUp, ReferalLink, TARIFFS, REFERRAL_BONUS_PERCENT
 from .master_sch import main_reply_kbd, BalanceCheck
 from .maintenance_sch import CalculateArcana, DeleteFunc

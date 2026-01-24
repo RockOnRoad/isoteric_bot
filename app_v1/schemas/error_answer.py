@@ -1,7 +1,12 @@
-#  Standard error message
+#  Generation error message
 
-ERROR_ANSWER = (
+GENERATION_ERROR_ANSWER = (  #  Google Client Error
     "Связь с матрицей растворилась в шуме нулей и единиц.\n"
     "Она вернётся, когда линии судьбы снова найдут точку соприкосновения.\n\n"
     "Попробуйте повторить свой запрос позже."
+)
+
+WITCHCRAFT_ERROR_ANSWER = (  #  Google Client Error
+    "Связь с матрицей растворилась в шуме нулей и единиц.\n"
+    "Она вернётся, когда линии судьбы снова найдут точку соприкосновения."
 )

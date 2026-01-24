@@ -1,10 +1,25 @@
-from datetime import datetime
-from typing import TYPE_CHECKING
+from enum import Enum as PyEnum
+from typing import TYPE_CHECKING, Any, Literal
 
-from sqlalchemy import DateTime, String, Boolean, BigInteger, ForeignKey, Integer, Text
+from sqlalchemy import (
+    String,
+    BigInteger,
+    ForeignKey,
+    Integer,
+    Enum,
+)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.models.base import Base
+
+
+class GenStatus(str, PyEnum):
+    success = "success"
+    error = "error"
+    not_enough_balance = "not_enough_balance"
+    already_generated_today = "already_generated_today"
+
 
 if TYPE_CHECKING:
     from .user import User
@@ -15,20 +30,20 @@ class GenerationHistory(Base):
 
     __tablename__ = "generation_history"
 
-    #  Telegram ID пользователя
+    #  ID пользователя
     user_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("users.id", ondelete="CASCADE")
     )
-    #  Время генерации
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     #  Модель, которая использовалась
     model: Mapped[str] = mapped_column(String)
     #  Описание запроса, который ввел клиент
-    request: Mapped[str] = mapped_column(Text)
+    request: Mapped[dict[str, Any]] = mapped_column(JSONB)
     #  Стоимость в кредитах
     cost: Mapped[int] = mapped_column(Integer)
-    #  Статус генерации: True - успешна, False - неуспешна
-    gen_successful: Mapped[bool] = mapped_column(Boolean)
+    #  Статус генерации
+    gen_status: Mapped[GenStatus] = mapped_column(
+        Enum(GenStatus, name="gen_status_enum")
+    )
     #  Тип генерации в зависимости от бота
     gen_type: Mapped[str] = mapped_column(String)
 

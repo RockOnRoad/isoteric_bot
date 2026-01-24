@@ -9,8 +9,8 @@ from google.genai import Client
 from google.genai.errors import ClientError
 from google.genai.types import GenerateContentConfig, ImageConfig
 
-from core.config import settings, devs, bot
-from schemas import ERROR_ANSWER
+from core.config import settings, devs, bot, GOOGLE_AI_MODEL
+from schemas import GENERATION_ERROR_ANSWER
 from prompts import PROMPT_TEMPLATES
 from services import ARCANA_MAP, calculate_arcana
 
@@ -33,18 +33,20 @@ async def handle_google_ai_error(
     error: Exception,
     upd: CallbackQuery | Message,
     *,
+    job: str = "unknown",
+    user_answer: str = GENERATION_ERROR_ANSWER,
     animation=None,
 ) -> None:
     if animation:
         await animation.stop()
-    logger.error(f"Google AI error: {error}")
+    logger.error(f"Google AI error")
     if isinstance(error, GoogleAIUnsupportedLocation):
         logger.error(f"Gemini unsupported location: {error}")
         for dev in devs:
             await bot.send_message(
                 chat_id=int(dev),
                 text=(
-                    "Изображение для пользователя\n"
+                    f"Изображение <b>{job}</b> для пользователя\n"
                     f"<b>{upd.from_user.id} @{upd.from_user.username}</b>\n"
                     "не было сгенерировано поскольку местоположение сервера не поддерживается\n\n"
                     f"{error}"
@@ -52,9 +54,9 @@ async def handle_google_ai_error(
             )
 
         if isinstance(upd, CallbackQuery):
-            await upd.message.answer(ERROR_ANSWER)
+            await upd.message.answer(user_answer)
         elif isinstance(upd, Message):
-            await upd.answer(ERROR_ANSWER)
+            await upd.answer(user_answer)
         return
 
     if isinstance(error, GoogleAILimitError):
@@ -63,16 +65,16 @@ async def handle_google_ai_error(
             await bot.send_message(
                 chat_id=int(dev),
                 text=(
-                    "Изображение для пользователя\n"
+                    f"Изображение <b>{job}</b> для пользователя\n"
                     f"<b>{upd.from_user.id} @{upd.from_user.username}</b>\n"
                     "не было сгенерировано. Израсходована квота Google AI\n\n"
                     f"{error}"
                 ),
             )
         if isinstance(upd, CallbackQuery):
-            await upd.message.answer(ERROR_ANSWER)
+            await upd.message.answer(user_answer)
         elif isinstance(upd, Message):
-            await upd.answer(ERROR_ANSWER)
+            await upd.answer(user_answer)
         return
 
     if isinstance(error, GoogleAIUnavailable):
@@ -81,16 +83,16 @@ async def handle_google_ai_error(
             await bot.send_message(
                 chat_id=int(dev),
                 text=(
-                    "Изображение для пользователя\n"
+                    f"Изображение <b>{job}</b> для пользователя\n"
                     f"<b>{upd.from_user.id} @{upd.from_user.username}</b>\n"
                     "не было сгенерировано. Недоступен сервис Google AI\n\n"
                     f"{error}"
                 ),
             )
         if isinstance(upd, CallbackQuery):
-            await upd.message.answer(ERROR_ANSWER)
+            await upd.message.answer(user_answer)
         elif isinstance(upd, Message):
-            await upd.answer(ERROR_ANSWER)
+            await upd.answer(user_answer)
         return
 
 
@@ -109,7 +111,7 @@ class GoogleAI:
         context: dict,
         state: FSMContext,
         *,
-        model: str = "gemini-2.5-flash-image",
+        model: str = GOOGLE_AI_MODEL,
     ) -> BufferedInputFile | None:
         """
         Генерирует изображение с помощью модели Gemini.
