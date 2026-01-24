@@ -24,6 +24,8 @@ COPY pyproject.toml uv.lock* ./
 RUN pip install --upgrade pip \
     && pip install .
 
+COPY . .
+
 # Запуск приложения
 ENTRYPOINT ["python3", "-u"]
 CMD ["app_v1/main.py"]
