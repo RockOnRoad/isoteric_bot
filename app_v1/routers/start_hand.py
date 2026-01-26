@@ -87,10 +87,10 @@ async def handle_start_main(
                 try:
                     await update.message.edit_text(text, reply_markup=kbd.markup)
                 except TelegramBadRequest as e:
-                    print(e.message)
-                    print(e.label)
-                    print(e.method)
-                    if e.message == "Bad Request: message is not modified":
+                    if (
+                        e.message
+                        == "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message"
+                    ):
                         update.message.delete()
                         await update.message.answer(text, reply_markup=kbd.markup)
                     else:
