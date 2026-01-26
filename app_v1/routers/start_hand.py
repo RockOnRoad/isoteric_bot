@@ -2,6 +2,7 @@ import logging
 import xml.sax.saxutils as saxutils
 
 from aiogram import Router, F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
@@ -45,7 +46,6 @@ async def handle_start_main(
     if sub_2_bonus is None or not sub_2_bonus.deposited:
         # if not sub_2_bonus.deposited:
         #  Check if user is subscribed to the channels
-        print(subbed)
         if subbed:
             #  Increase user balance and add sub_2 bonus
             await srv.apply_sub_2_bonus(user_id=user.id, session=db_session)
@@ -84,8 +84,14 @@ async def handle_start_main(
                     "Чтобы открыть знания и образы Матрики, необходимо быть в кругу наших подписчиков. Энергия течет только там, где есть связь.\n\n"
                     "Подпишитесь на каналы, чтобы продолжить путь 👇\n"
                 )
-                await update.message.edit_text(text, reply_markup=kbd.markup)
-
+                try:
+                    await update.message.edit_text(text, reply_markup=kbd.markup)
+                except TelegramBadRequest as e:
+                    if e.message == "Bad Request: message is not modified":
+                        update.message.delete()
+                        await update.message.answer(text, reply_markup=kbd.markup)
+                    else:
+                        raise e
             return
 
     # Если пользователь прошёл начальный опрос - показываем главную клавиатуру
