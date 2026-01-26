@@ -3,6 +3,7 @@ import logging
 import yaml
 from pathlib import Path
 from typing import Any
+import xml.sax.saxutils as saxutils
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
@@ -59,6 +60,7 @@ async def handle_ai_portraits_main(
     elif isinstance(update, Message):
         await state.clear()
         user = await get_user_by_telegram_id(update.from_user.id, db_session)
+
         try:
             await state.update_data(
                 name=user.name, birthday=user.birthday, sex=user.sex
@@ -73,11 +75,9 @@ async def handle_ai_portraits_main(
             return
     await state.set_state(AiPortraitStates.domain)
 
-    name = await state.get_value("name")
-
     msg = (
         "<b>🎭 AI-образы по Матрице Судьбы</b>\n\n"
-        f"""<b>{name}</b>, иногда один точный образ работает сильнее, чем длинный текст.
+        f"""<b>{saxutils.escape(user.name)}</b>, иногда один точный образ работает сильнее, чем длинный текст.
 В этом разделе я создаю 🪄 для тебя <b>личные энергетические талисманы — AI-картины 🃏</b> по твоим арканам: про деньги, любовь, женский магнетизм и даже теневую сторону, чтобы вернуть ресурс, включить внутреннюю силу и зафиксировать нужное состояние. Через них работать с намерением и состоянием.\n\n
 """
         "<b>Выбери, какой образ создадим прямо сейчас 👇</b>"
@@ -120,17 +120,14 @@ async def handle_buttons(
 
     #  Получаем пользователя из базы данных
     user = await get_user_by_telegram_id(call.from_user.id, db_session)
-    sex = user.sex
-    name = user.name
-    birthday = user.birthday
 
     #  Обновляем данные в FSM
     portrait = callback_data.button
     await state.update_data(
         domain=callback_data.button,
-        sex=sex,
-        name=name,
-        birthday=birthday,
+        sex=user.sex,
+        name=user.name,
+        birthday=user.birthday,
     )
 
     # Загружаем данные из YAML файла
@@ -144,7 +141,7 @@ async def handle_buttons(
     except KeyError:
         desc = (
             portrait_data["description_male"]
-            if sex == "m"
+            if user.sex == "m"
             else portrait_data["description_female"]
         )
 
@@ -226,7 +223,7 @@ async def handle_generate_portrait(
     await call.answer()
 
     context: dict[str, Any] = await state.get_data()
-
+    context["name"] = context.get("name", "")
     if context:
 
         request = {
@@ -293,7 +290,7 @@ async def handle_generate_portrait(
 
         caption_title = ai_portraits_data[context["domain"]]["caption_title"]
         msg = (
-            f"✨ Готово, {context['name']}. Это образ {caption_title}\n"
+            f"✨ Готово, {saxutils.escape(context['name'])}. Это образ {caption_title}\n"
             # "**ПОДСТАВЛЯЕТСЯ ТЕКСТ: КОРОТКАЯ ТРАКТОВКА КАРТОЧКИ**\n"
             "Сохрани его и возвращайся, когда хочется мягкости, принятия и близости 💗\n"
         )

@@ -1,6 +1,7 @@
 import logging
 import yaml
 from pathlib import Path
+import xml.sax.saxutils as saxutils
 
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
@@ -71,11 +72,9 @@ async def handle_readings_main(
             return
     await state.set_state(ReadingsStates.domain)
 
-    name = await state.get_value("name")
-
     msg = (
         "<b>🔮 Разборы Матрицы Судьбы</b>\n\n"
-        f"""{name}, мы уже увидели твой центральный код. Теперь можно точечно разобрать отдельные сферы: деньги, отношения, предназначение, кармические задачи, ресурсное состояние или сделать полный разбор сразу.
+        f"""{saxutils.escape(user.name)}, мы уже увидели твой центральный код. Теперь можно точечно разобрать отдельные сферы: деньги, отношения, предназначение, кармические задачи, ресурсное состояние или сделать полный разбор сразу.
 
 Каждый разбор — это отдельный фокус: я беру нужные вершины твоей Матрицы, смотрю связи между арканами и перевожу их на понятный язык — без страшилок, с опорой на психологию и твои реальные ситуации.\n\n
 """
@@ -298,10 +297,6 @@ async def handle_no_readings_for_poor(
     user_balance = await get_user_balance(call.from_user.id, db_session)
     cost = await state.get_value("cost")
 
-    logger.info(
-        f"{call.from_user.id} @{call.from_user.username} - 'no_readings_for_poor (ub:{user_balance} cost:{cost})'"
-    )
-
     await call.answer()
 
     buttons = {
@@ -323,6 +318,7 @@ async def handle_no_readings_for_poor(
     context = await state.get_data()
     context["domain"] = callback_data.domain
     context["aspect"] = callback_data.aspect
+    context["name"] = context.get("name", "")
     request = {
         "job": "readings",
         **context,
@@ -337,3 +333,7 @@ async def handle_no_readings_for_poor(
         "gen_status": "not_enough_balance",
     }
     generation = await add_generation(session=db_session, commit=True, **gen_data)
+
+    logger.info(
+        f"{call.from_user.id} @{call.from_user.username} - 'no_readings_for_poor (ub:{user_balance} cost:{cost})'"
+    )

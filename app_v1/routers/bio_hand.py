@@ -1,24 +1,14 @@
 """User command handlers."""
 
 from datetime import datetime, timedelta
-
 import logging
-from aiogram import Router, F
-from aiogram.filters import CommandObject, CommandStart
-from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
-from sqlalchemy.ext.asyncio import AsyncSession
+import xml.sax.saxutils as saxutils
 
-from db.crud import (
-    get_user_by_telegram_id,
-    increase_user_balance,
-    add_user_bonus,
-    get_user_bonus_by_name,
-)
-from db.models import User
-from services.first_start import first_start_routine
+from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
+from aiogram.types import Message, CallbackQuery
 from keyboards import InlineKbd
-from schemas import BioStates, BioEdit, BioCorrect, BioSex, main_reply_kbd, BONUSES
+from schemas import BioStates, BioEdit, BioCorrect, BioSex
 
 
 logger = logging.getLogger(__name__)
@@ -30,11 +20,11 @@ async def summary_message(message: Message, state: FSMContext) -> None:
     birthday = await state.get_value("birthday")
     edited = await state.get_value("edited")
 
-    msg = f"{name}, данные успешно обновлены.\n" if edited else ""
+    msg = f"{saxutils.escape(name)}, данные успешно обновлены.\n" if edited else ""
 
     msg = msg + (
         "Проверяю настройки твоей энергии… ⏳\n"
-        f"Твоё имя:  {name}\n"
+        f"Твоё имя:  {saxutils.escape(name)}\n"
         f"Твой день рождения: <b>{birthday}</b>\n"
         "Всё верно? Или нужно что-то скорректировать?"
     )
@@ -52,82 +42,6 @@ async def summary_message(message: Message, state: FSMContext) -> None:
     await message.answer(msg, reply_markup=kbd.markup)
 
 
-#  ----------- START -----------
-
-
-@bio_rtr.message(CommandStart())
-async def handle_start_command(
-    message: Message,
-    command: CommandObject,
-    state: FSMContext,
-    db_session: AsyncSession,
-) -> None:
-    await state.clear()
-
-    user = await get_user_by_telegram_id(tg_id=message.from_user.id, session=db_session)
-
-    # Если пользователь прошёл начальный опрос - показываем главную клавиатуру
-    if user is not None and user.birthday:
-        msg = (
-            f"{user.name}, Вы снова в <b>Матрике • Код Твоей Души</b> ✨\n"
-            "Я готова продолжить Ваш разбор с того места, где Вы остановились — или сразу открыть нужную сферу 🌿\n\n"
-            "<b>Куда пойдём сейчас? 👇</b>"
-        )
-        #  Если пользователь есть в БД и у него есть день рождения - показываем главную клавиатуру
-        await message.answer(msg, reply_markup=main_reply_kbd.markup)
-        await state.clear()
-
-    else:
-        msg = """
-Добро пожаловать в Матрику • Код Твоей Души ✨
-<b>Здорово, что ты здесь.</b>
-
-Здесь мы бережно разбираем твою Матрицу Судьбы по <b><u>дате рождения</u></b>: характер, денежный канал, отношения, кармические задачи и родовые истории — всё в мягком, честном и безопасном формате 🌿
-
-Матрица — это не магия и не угадайка. Это геометрия твоей души: набор чисел, через который видны сильные стороны, направления роста и природные энергии. Я опираюсь на математику энергий, психологию и возможности нейросетей, чтобы превратить всё это в ясные подсказки и живые образы ✨
-
-Как всё будет происходить:
-1. Сначала я посчитаю твой главный аркан и покажу, какую энергию ты несёшь в мир 💫
-2. Затем ты сможешь выбрать разбор глубже: деньги 💸, любовь ❤️, предназначение 🔮 или полный анализ
-3. Параллельно мы создадим твой энергетический AI-образ — визуальный портрет твоей энергии 🎭
-Первая короткая распаковка — в подарок 🎁
-
-Давай знакомиться.
-Как мне к тебе обращаться?
-<b>(Напиши, пожалуйста, своё имя 👇)</b>
-"""
-
-        if user is None:
-            user: User | None = await first_start_routine(
-                command=command, message=message, db_session=db_session
-            )
-            if user is None:
-                msg = "Похоже реферальная ссылка некорректна. Попробуй ещё раз."
-
-        await message.answer(msg, reply_markup=ReplyKeyboardRemove())
-        await state.set_state(BioStates.name)
-
-    sub_2_bonus = await get_user_bonus_by_name(
-        user_id=user.id,
-        bonus_name="sub_2",
-        session=db_session,
-    )
-    if sub_2_bonus is None:
-        user = await get_user_by_telegram_id(message.from_user.id, db_session)
-        await add_user_bonus(
-            user_id=user.id,
-            bonus_name="sub_2",
-            amount=BONUSES["sub_2"]["amount"],
-            deposited=True,
-            session=db_session,
-        )
-        await increase_user_balance(
-            user_id=user.id,
-            amount=BONUSES["sub_2"]["amount"],
-            session=db_session,
-        )
-
-
 #  ----------- NAME ----------- ШАГ 1
 
 
@@ -135,10 +49,11 @@ async def handle_start_command(
 @bio_rtr.message(BioStates.name)
 async def handle_name_message(message: Message, state: FSMContext) -> None:
 
+    name = saxutils.escape(message.text)
     await state.update_data(name=message.text)
 
     msg = (
-        f"Приятно познакомиться, {message.text} ✨\n"
+        f"Приятно познакомиться, {name} ✨\n"
         """Чтобы трактовки были максимально точными и живыми, мне важно учитывать твою энергетику — мягкий женский поток или структурный мужской. Энергии Матрицы по-разному проявляются в мужском и женском полюсе.
 <b>Укажи, пожалуйста, свой пол 👇</b>"""
     )

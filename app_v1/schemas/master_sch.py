@@ -1,5 +1,6 @@
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Filter
+from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.fsm.context import FSMContext
@@ -35,6 +36,17 @@ class BalanceCheck(Filter):
             return False
 
         return user_balance >= cost
+
+
+#  ----------- START STATES -----------
+
+
+class StartCallback(CallbackData, prefix="start"):
+    trigger: str
+
+
+class Sub2Callback(CallbackData, prefix="sub_2"):
+    button: str
 
 
 #  ----------- BIO STATES -----------

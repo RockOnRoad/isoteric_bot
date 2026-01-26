@@ -1,4 +1,3 @@
-import os
 import logging
 from re import M
 
@@ -20,7 +19,7 @@ from db.crud import (
     decrease_user_balance,
     increase_user_balance,
 )
-from keyboards import InlineKbd
+from keyboards import InlineKbd, InlineKeyboard
 from prompts import PROMPT_TEMPLATES
 from services import calculate_arcana, GoogleAI, OpenAIClient
 from schemas import CalculateArcana, DeleteFunc
@@ -258,8 +257,13 @@ async def cn_subs(
         except TelegramBadRequest:
             subbed = False
             break
-        print(f"Member: {member}")
-        print(f"Member status: {member.status}")
+        await message.answer(
+            text=(
+                f"Channel: {channel}"
+                f"Member: {member}"
+                f"Member status: {member.status}"
+            )
+        )
         if member.status not in sub_statuses:
             subbed = False
             break
@@ -327,3 +331,17 @@ async def test_animation_next_hand(call: CallbackQuery):
     await anim.stop()
 
     await mes.edit_text("Анимация завершена.")
+
+
+#  -------------  INLINE KEYBOARD  -------------  #
+
+
+@mnt_rtr.message(Command("inline_keyboard"), OwnerCheck())
+async def test_inline_keyboard_hand(message: Message):
+    buttons: tuple[dict[str, CallbackData | str]] = (
+        {"text": "Button 1", "callback_data": DeleteFunc(button="button1")},
+        {"text": "Button 2", "callback_data": DeleteFunc(button="button2")},
+        {"text": "Button 3", "url": "https://www.google.com"},
+    )
+    kbd = InlineKeyboard(buttons=buttons, width=2)
+    await message.answer("Inline keyboard", reply_markup=kbd.markup)

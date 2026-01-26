@@ -1,7 +1,7 @@
 """Handlers package."""
 
 __all__ = (
-    "is_user_subbed_rtr",
+    "start_rtr",
     "admin_rtr",
     "ai_portraits_rtr",
     "bio_rtr",
@@ -15,7 +15,7 @@ __all__ = (
 
 from aiogram import Router
 
-from routers.is_user_subbed_hand import rtr as is_user_subbed_rtr
+from routers.start_hand import rtr as start_rtr
 from routers.admin_hand import rtr as admin_rtr
 from routers.ai_portraits_hand import ai_portraits_rtr
 from routers.bio_hand import bio_rtr
@@ -28,7 +28,7 @@ from routers.witch_hand import witch_rtr
 
 router = Router(name=__name__)
 router.include_routers(
-    is_user_subbed_rtr,
+    start_rtr,
     admin_rtr,
     ai_portraits_rtr,
     bio_rtr,

@@ -1,4 +1,6 @@
 import logging
+import xml.sax.saxutils as saxutils
+
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
@@ -12,7 +14,7 @@ from db.crud import (
     get_user_referral_bonuses_total,
 )
 from keyboards import InlineKbd
-from schemas import LkButton, LkTopUp, ReferalLink, TARIFFS
+from schemas import LkButton, LkTopUp, TARIFFS
 
 logger = logging.getLogger(__name__)
 lk_rtr = Router()
@@ -22,11 +24,10 @@ lk_rtr = Router()
 
 async def lk_handler(update: Message | CallbackQuery, db_session: AsyncSession) -> None:
     user = await get_user_by_telegram_id(update.from_user.id, db_session)
-    name = user.name
 
     msg = (
         "👤 Личное пространство\n\n"
-        f"{name}, здесь центр управления вашей энергией и доступом к знаниям. ✨\n\n"
+        f"{saxutils.escape(user.name)}, здесь центр управления вашей энергией и доступом к знаниям. ✨\n\n"
         f"<b>💎 Ваш баланс: {user.balance} ⚡️</b>\n\n"
         "Любой запрос к Матрике = <b>33⚡️</b>.\n\n"
         "🤝 Кармический менеджмент\n"
@@ -129,7 +130,7 @@ async def invite_friend(callback: CallbackQuery, db_session: AsyncSession) -> No
 
     msg = (
         "<b>🤝 Энергия связей</b>\n\n"
-        f"{user.name}, это ваш круг влияния. Когда вы делитесь инструментом развития с другими, Вселенная возвращает вам ресурс 🔮\n\n"
+        f"{saxutils.escape(user.name)}, это ваш круг влияния. Когда вы делитесь инструментом развития с другими, Вселенная возвращает вам ресурс 🔮\n\n"
         f"<b>👥 В вашем круге:</b> {referrals_count} чел.\n"
         f"<b>💎 Начислено бонусов:</b> {total_earned}⚡️\n"
         f"🔗 Ваша пригласительная ссылка:\n"

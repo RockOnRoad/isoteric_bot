@@ -1,5 +1,5 @@
-import asyncio
 import logging
+import xml.sax.saxutils as saxutils
 
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
@@ -17,9 +17,9 @@ from db.crud import (
 )
 from keyboards import InlineKbd
 from schemas import (
+    main_reply_kbd,
     BioStates,
     BioCorrect,
-    main_reply_kbd,
     BalanceCheck,
     ReadingsDomain,
     ReadingsStates,
@@ -58,13 +58,6 @@ async def stir_the_cauldron(
         base_text="🌀 Соединяюсь с полем твоей Матрицы",
     )
     await animation_while_generating_image.start()
-
-    # #  Обновляем данные пользователя в базе данных
-    # user_id = call.from_user.id
-    # username = call.from_user.username
-    # first_name = call.from_user.first_name
-    # last_name = call.from_user.last_name
-    # await get_or_create_user(user_id, username, first_name, last_name, db_session)
 
     #  getting fsm data
     fsm_data = await state.get_data()

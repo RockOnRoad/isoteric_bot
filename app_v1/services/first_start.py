@@ -1,5 +1,4 @@
 import logging
-from math import e
 from aiogram.filters import CommandObject
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +10,7 @@ from db.crud import (
     get_user,
     get_last_added_user_id,
 )
-
+from db import models as mdl
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +27,6 @@ async def first_start_routine(
         message: Сообщение от пользователя
         db_session: Сессия базы данных
     """
-    logger.info(
-        f"{message.from_user.id} @{message.from_user.username} - 'first_start_routine'"
-    )
 
     referrer = None
     referrer_id = None
@@ -72,7 +68,7 @@ async def first_start_routine(
             sources.append((str(key), str(value)))
 
     try:
-        user = await upsert_user(
+        user: mdl.User | None = await upsert_user(
             user_id=message.from_user.id,
             username=message.from_user.username,
             first_name=message.from_user.first_name,
@@ -96,5 +92,7 @@ async def first_start_routine(
                 commit=False,
             )
         await db_session.commit()
+
+    logger.info(f"{user.user_id} @{user.username} - 'first_start_routine'")
 
     return user

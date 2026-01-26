@@ -1,3 +1,3 @@
-__all__ = ("InlineKbd", "ReplyKbd")
+__all__ = ("InlineKbd", "ReplyKbd", "InlineKeyboard")
 
-from .kbd_builder import InlineKbd, ReplyKbd
+from .kbd_builder import InlineKbd, ReplyKbd, InlineKeyboard

@@ -83,15 +83,10 @@ async def upsert_user(
         .returning(User)
     )
 
-    try:
-        result = await session.execute(stmt)
-        user = result.scalar_one()
-        await session.commit()
-        return user
-
-    except SQLAlchemyError:
-        await session.rollback()
-        raise
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+    await session.commit()
+    return user
 
 
 #  --------------- ADD PARAMETERS TO USER  ---------------

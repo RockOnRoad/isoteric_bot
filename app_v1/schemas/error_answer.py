@@ -6,7 +6,7 @@ GENERATION_ERROR_ANSWER = (  #  Google Client Error
     "Попробуйте повторить свой запрос позже."
 )
 
-WITCHCRAFT_ERROR_ANSWER = (  #  Google Client Error
+ERROR_ANSWER = (  #  Google Client Error
     "Связь с матрицей растворилась в шуме нулей и единиц.\n"
     "Она вернётся, когда линии судьбы снова найдут точку соприкосновения."
 )

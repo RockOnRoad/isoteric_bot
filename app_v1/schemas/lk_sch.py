@@ -9,10 +9,6 @@ class LkTopUp(CallbackData, prefix="lk_top_up"):
     rub: int
 
 
-class ReferalLink(CallbackData, prefix="invite_friend"):
-    button: str
-
-
 #  ----------- TARIFFS -----------
 
 

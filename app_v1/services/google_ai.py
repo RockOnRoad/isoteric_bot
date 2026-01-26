@@ -208,8 +208,8 @@ class GoogleAI:
                     contents=prompt,
                     config=config,
                 )
-                for part in response.parts:
-                    if part.inline_data:
+                if response.parts is not None:
+                    for part in response.parts:
                         # Получаем байты изображения напрямую из inline_data
                         img_bytes: BytesIO = BytesIO(part.inline_data.data)
                         img_bytes.seek(0)
@@ -218,6 +218,8 @@ class GoogleAI:
                             img_bytes.getvalue(), filename="portrait.jpg"
                         )
                         return photo
+                else:
+                    continue
         except ClientError as e:
             if e.code == 400:
                 raise GoogleAIUnsupportedLocation(
@@ -226,6 +228,9 @@ class GoogleAI:
             if e.code == 429:
                 raise GoogleAILimitError(f"{e.code}: {e.status}\n{e.message}") from e
             raise GoogleAIUnavailable(f"{e.code}: {e.status}\n{e.message}") from e
+        except Exception as e:
+            logger.error(f"Error generating picture: {e}")
+            raise e
 
     async def google_models(self) -> list[str]:
         """

@@ -2,6 +2,7 @@ import base64
 import logging
 import yaml
 from pathlib import Path
+import xml.sax.saxutils as saxutils
 
 from aiogram.types import CallbackQuery, Message
 from openai import AsyncOpenAI, PermissionDeniedError
@@ -240,6 +241,7 @@ class OpenAIClient:
                     model=model, input=prompt, conversation=conversation_id
                 )
                 answer = response.output_text
+                answer = saxutils.escape(answer)
             return answer, conversation_id
 
         except PermissionDeniedError as e:

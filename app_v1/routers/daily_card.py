@@ -1,5 +1,6 @@
 from datetime import date
 import logging
+import xml.sax.saxutils as saxutils
 
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, BufferedInputFile
@@ -175,7 +176,7 @@ async def handle_daily_card_main(
     else:
 
         text = (
-            f"{user.name}, мы уже открыли карту этого дня. ✨\n"
+            f"{saxutils.escape(user.name)}, мы уже открыли карту этого дня. ✨\n"
             "Пространство не меняет свои вибрации от повторных вопросов — это лишь создаёт лишний шум.\n"
             "Энергия уже запущена.\n"
             "Сейчас важнее не спрашивать снова, а действовать.\n"
