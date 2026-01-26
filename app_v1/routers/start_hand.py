@@ -39,12 +39,22 @@ async def handle_start_main(
         session=db_session,
     )
 
-    #  Check if user has sub_2 bonus
-    if sub_2_bonus is None:
-        #  Check if user is subscribed to the channels
-        subbed: bool = await srv.sub_2_check(user_id=user.user_id)
+    subbed: bool = await srv.sub_2_check(user_id=user.user_id)
 
-        if not subbed:
+    #  Check if user has sub_2 bonus
+    if sub_2_bonus is None or not sub_2_bonus.deposited:
+        # if not sub_2_bonus.deposited:
+        #  Check if user is subscribed to the channels
+        print(subbed)
+        if subbed:
+            #  Increase user balance and add sub_2 bonus
+            await srv.apply_sub_2_bonus(user_id=user.id, session=db_session)
+
+            if isinstance(update, Message):
+                await update.answer(f"+ {sch.BONUSES['sub_2']['amount']}⚡️")
+            else:
+                await update.message.edit_text(f"+ {sch.BONUSES['sub_2']['amount']}⚡️")
+        else:
             buttons = (
                 {
                     "text": "Нейроофис",
@@ -77,14 +87,6 @@ async def handle_start_main(
                 await update.message.edit_text(text, reply_markup=kbd.markup)
 
             return
-        else:
-            #  Increase user balance and add sub_2 bonus
-            await srv.apply_sub_2_bonus(user_id=user.id, session=db_session)
-
-            if isinstance(update, Message):
-                await update.answer(f"+ {sch.BONUSES['sub_2']['amount']}⚡️")
-            else:
-                await update.message.edit_text(f"+ {sch.BONUSES['sub_2']['amount']}⚡️")
 
     # Если пользователь прошёл начальный опрос - показываем главную клавиатуру
     if user.birthday:

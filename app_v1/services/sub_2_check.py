@@ -2,7 +2,7 @@ from aiogram.exceptions import TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import RELATED_CHANNELS, bot
-from db.crud import add_user_bonus, increase_user_balance
+from db.crud import upsert_user_bonus, increase_user_balance
 from schemas import BONUSES
 
 
@@ -30,7 +30,7 @@ async def sub_2_check(user_id: int) -> bool:
 
 
 async def apply_sub_2_bonus(user_id: int, session: AsyncSession):
-    await add_user_bonus(
+    await upsert_user_bonus(
         user_id=user_id,
         bonus_name="sub_2",
         amount=BONUSES["sub_2"]["amount"],

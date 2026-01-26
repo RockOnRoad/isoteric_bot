@@ -1,10 +1,10 @@
 import logging
-from sqlalchemy import select, update, func, or_
+from sqlalchemy import select, update, func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import DBAPIError, SQLAlchemyError, IntegrityError
+from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
-from db.models import User, Segment
+from db.models import User
 
 logger = logging.getLogger(__name__)
 

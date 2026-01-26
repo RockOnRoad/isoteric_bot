@@ -18,6 +18,7 @@ __all__ = (
     "get_pending_payments",
     "create_referral_bonus",
     "get_user_referral_bonuses_total",
+    "upsert_user_bonus",
     "add_user_bonus",
     "get_user_bonus_by_name",
     "add_generation",
@@ -49,5 +50,5 @@ from .ref_bonuses_crud import (
     create_referral_bonus,
     get_user_referral_bonuses_total,
 )
-from .user_bonuses_crud import add_user_bonus, get_user_bonus_by_name
+from .user_bonuses_crud import upsert_user_bonus, add_user_bonus, get_user_bonus_by_name
 from .generations_crud import add_generation
