@@ -71,13 +71,9 @@ class InlineKeyboard:
         kb = InlineKeyboardBuilder()
 
         for obj in self.buttons:
-            # Не мутируем исходный объект, иначе при повторном вызове pack получим ошибку
-            kwargs = obj.copy()
-            if "callback_data" in kwargs and isinstance(
-                kwargs["callback_data"], CallbackData
-            ):
-                kwargs["callback_data"] = kwargs["callback_data"].pack()
-            kb.button(**kwargs)
+            if "callback_data" in obj:
+                obj["callback_data"] = obj["callback_data"].pack()
+            kb.button(**obj)
 
         if self.include_cancel:
             kb.button(text="✖️ Отмена", callback_data="cancel")
