@@ -91,8 +91,7 @@ async def handle_start_main(
                         e.message
                         == "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message"
                     ):
-                        await update.message.delete()
-                        await update.message.answer(text, reply_markup=kbd.markup)
+                        return
                     else:
                         raise e
             return
