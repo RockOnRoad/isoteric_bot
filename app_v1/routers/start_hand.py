@@ -91,6 +91,7 @@ async def handle_start_main(
                         e.message
                         == "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message"
                     ):
+                        await update.answer("Подпишитесь на каналы, чтобы продолжить.")
                         return
                     else:
                         raise e
